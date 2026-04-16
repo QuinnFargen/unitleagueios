@@ -6,11 +6,11 @@ struct Team: Codable, Identifiable {
     let abbr: String
     let teamConcat: String
     let name: String
-    let location: String
-    let conf: String
-    let div: String
-    let lat: Double
-    let lon: Double
+    let location: String?
+    let conf: String?
+    let div: String?
+    let lat: Double?
+    let lon: Double?
     let weather: Int
 
     enum CodingKeys: String, CodingKey {
