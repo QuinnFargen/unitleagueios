@@ -1,105 +1,109 @@
-//
-//  HomeView.swift
-//  unitleagueios
-//
-//  Created by Quinn Fargen on 11/7/25.
-//
-
-
 import SwiftUI
 
 struct HomeView: View {
+    @State private var leagues: [League] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private let service = LeagueService()
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                // Background
-                LinearGradient(gradient: Gradient(colors: [.black, .gray]), startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea()
+                Color.black.ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    Text("Unit League")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.white)
-
-                    // Stats Summary
-                    HStack(spacing: 16) {
-                        SummaryCard(title: "Units", value: "+13.5")
-                        SummaryCard(title: "Win %", value: "58%")
-                        SummaryCard(title: "Record", value: "34-24")
-                    }
-
-                    // Featured Bets / Matchups
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Top Matchups")
-                            .font(.headline)
-                            .foregroundColor(.white)
-
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 14) {
-                                ForEach(0..<4) { _ in
-                                    MatchCard()
+                Group {
+                    if isLoading {
+                        ProgressView()
+                            .tint(.white)
+                    } else if let error = errorMessage {
+                        VStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.largeTitle)
+                                .foregroundStyle(.red)
+                            Text(error)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button("Retry") { fetchLeagues() }
+                                .buttonStyle(.bordered)
+                        }
+                        .padding()
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(leagues) { league in
+                                    LeagueCard(league: league)
                                 }
                             }
+                            .padding(.horizontal)
+                            .padding(.top, 8)
                         }
                     }
-
-                    Spacer()
                 }
-                .padding()
             }
+            .navigationTitle("Unit League")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        }
+        .task { fetchLeagues() }
+    }
+
+    private func fetchLeagues() {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                leagues = try await service.fetchLeagues()
+            } catch {
+                errorMessage = "Couldn't load leagues"
+            }
+            isLoading = false
         }
     }
 }
 
-struct SummaryCard: View {
-    var title: String
-    var value: String
+struct LeagueCard: View {
+    let league: League
 
-    var body: some View {
-        VStack {
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.gray)
-            Text(value)
-                .font(.headline)
-                .foregroundColor(.white)
+    var sportIcon: String {
+        switch league.sport {
+        case "BASKET": return "basketball"
+        case "FOOT":   return "football"
+        case "PUCK":   return "hockey.puck"
+        case "BASE":   return "baseball"
+        default:       return "sportscourt"
         }
-        .frame(width: 90, height: 70)
-        .background(Color(.darkGray))
-        .cornerRadius(12)
     }
-}
 
-struct MatchCard: View {
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text("Lakers @ Warriors")
+        HStack(spacing: 16) {
+            Image(systemName: sportIcon)
+                .font(.title2)
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(Color.white.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(league.abbr)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text(league.name)
                     .font(.subheadline)
-                    .foregroundColor(.white)
-                Text("Tonight 7:00PM")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.secondary)
             }
+
             Spacer()
-            Text("+2.5")
-                .font(.headline)
-                .foregroundColor(.green)
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
         .padding()
-        .background(Color(.darkGray))
-        .cornerRadius(14)
+        .background(Color.white.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
-
-
-
-//struct HomeView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        HomeView()
-//            .preferredColorScheme(.dark)
-//    }
-//}
 
 #Preview {
     HomeView()
