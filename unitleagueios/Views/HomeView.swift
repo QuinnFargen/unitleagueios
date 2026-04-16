@@ -42,7 +42,7 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("Unit League")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .task { fetchLeagues() }

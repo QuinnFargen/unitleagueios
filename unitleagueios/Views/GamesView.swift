@@ -24,7 +24,6 @@ struct GamesView: View {
     }
 
     private let leagues: [(label: String, id: Int?)] = [
-        ("All", nil),
         ("NBA", 1), ("NFL", 2), ("NHL", 3),
         ("MLB", 4), ("CFB", 5), ("CBB", 6)
     ]
@@ -40,38 +39,6 @@ struct GamesView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Date navigation
-                    // Date navigation
-                    HStack {
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.title3)
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                        }
-                        
-                        Spacer()
-                        
-                        Text(displayFormatter.string(from: selectedDate))
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                        
-                        Spacer()
-                        
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            Image(systemName: "chevron.right")
-                                .font(.title3)
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-
                     // League filter
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -80,7 +47,7 @@ struct GamesView: View {
                                     label: league.label,
                                     isSelected: selectedLeagueId == league.id
                                 ) {
-                                    selectedLeagueId = league.id
+                                    selectedLeagueId = (selectedLeagueId == league.id) ? nil : league.id
                                     selectedTeamId = nil
                                 }
                             }
@@ -93,15 +60,12 @@ struct GamesView: View {
                     if !teams.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
-                                FilterChip(label: "All", isSelected: selectedTeamId == nil) {
-                                    selectedTeamId = nil
-                                }
                                 ForEach(teams) { team in
                                     FilterChip(
                                         label: team.abbr,
                                         isSelected: selectedTeamId == team.id
                                     ) {
-                                        selectedTeamId = team.id
+                                        selectedTeamId = (selectedTeamId == team.id) ? nil : team.id
                                     }
                                 }
                             }
@@ -155,8 +119,31 @@ struct GamesView: View {
                 .animation(.easeInOut(duration: 0.2), value: teams.isEmpty)
             }
             .navigationTitle("Games")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 4) {
+                        Button {
+                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.subheadline)
+                                .foregroundStyle(.white)
+                        }
+                        Text(displayFormatter.string(from: selectedDate))
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                        Button {
+                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline)
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
         }
         .task(id: fetchKey) { await fetchGames() }
         .onChange(of: selectedLeagueId) { _, leagueId in
