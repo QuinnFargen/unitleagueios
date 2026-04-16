@@ -55,7 +55,7 @@ struct HomeView: View {
             do {
                 leagues = try await service.fetchLeagues()
             } catch {
-                errorMessage = "Couldn't load leagues"
+                errorMessage = error.localizedDescription
             }
             isLoading = false
         }
