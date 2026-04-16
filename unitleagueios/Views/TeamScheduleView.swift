@@ -127,7 +127,7 @@ private struct SchedCard: View {
     }
 
     private var matchup: String {
-        entry.home ? "vs \(entry.oppAbbr)" : "@ \(entry.oppAbbr)"
+        entry.home ? "vs \(entry.oppAbbr ?? "TBD")" : "@ \(entry.oppAbbr ?? "TBD")"
     }
 
     var body: some View {

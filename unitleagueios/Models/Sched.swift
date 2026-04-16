@@ -3,7 +3,7 @@ import Foundation
 struct Sched: Codable, Identifiable {
     let id: Int
     let teamAbbr: String
-    let oppAbbr: String
+    let oppAbbr: String?
     let gameDate: String?
     let gameNum: Int
     let yr: Int
@@ -15,7 +15,7 @@ struct Sched: Codable, Identifiable {
     let gameId: Int?
     let leagueId: Int
     let teamId: Int
-    let oppTeamId: Int
+    let oppTeamId: Int?
 
     enum CodingKeys: String, CodingKey {
         case id          = "sched_id"

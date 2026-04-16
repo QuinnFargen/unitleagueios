@@ -71,11 +71,13 @@ struct LeagueCard: View {
     let league: League
 
     var sportIcon: String {
-        switch league.sport {
-        case "BASKET": return "basketball"
-        case "FOOT":   return "football"
-        case "PUCK":   return "hockey.puck"
-        case "BASE":   return "baseball"
+        switch league.id {
+        case 1:   return "basketball"
+        case 2:   return "american.football.professional"
+        case 3:   return "hockey.puck"
+        case 4:   return "baseball"
+        case 5:   return "american.football"
+        case 6:   return "basketball.fill"
         default:       return "sportscourt"
         }
     }
