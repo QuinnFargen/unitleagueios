@@ -5,25 +5,30 @@ struct MainTabView: View {
         TabView {
             HomeView()
                 .tabItem {
-                    Label("Leagues", systemImage: "list.bullet")
+                    Label("Leagues", systemImage: "person.3")
                 }
 
             GamesView()
                 .tabItem {
-                    Label("Games", systemImage: "sportscourt")
+                    Label("Games", systemImage: "gamecontroller")
                 }
 
             PlaceholderView(title: "Bets")
                 .tabItem {
-                    Label("Bets", systemImage: "dollarsign.circle")
+                    Label("Bets", systemImage: "bitcoinsign.bank.building")
+                }
+            
+            PlaceholderView(title: "History")
+                .tabItem {
+                    Label("History", systemImage: "wallet.bifold.fill")
                 }
 
             PlaceholderView(title: "Profile")
                 .tabItem {
-                    Label("Profile", systemImage: "person.circle")
+                    Label("Profile", systemImage: "figure.pickleball")
                 }
         }
-        .tint(.white)
+        .tint(.green)
     }
 }
 
