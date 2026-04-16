@@ -3,11 +3,14 @@ import SwiftUI
 struct GamesView: View {
     @State private var selectedDate: Date = .now
     @State private var selectedLeagueId: Int? = nil
+    @State private var selectedTeamId: Int? = nil
     @State private var games: [Game] = []
+    @State private var teams: [Team] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    private let service = GameService()
+    private let gameService = GameService()
+    private let teamService = TeamService()
 
     private let displayFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -25,6 +28,11 @@ struct GamesView: View {
         ("NBA", 1), ("NFL", 2), ("NHL", 3),
         ("MLB", 4), ("CFB", 5), ("CBB", 6)
     ]
+
+    private var displayedGames: [Game] {
+        guard let teamId = selectedTeamId else { return games }
+        return games.filter { $0.homeTeamId == teamId || $0.awayTeamId == teamId }
+    }
 
     var body: some View {
         NavigationStack {
@@ -72,11 +80,34 @@ struct GamesView: View {
                                     isSelected: selectedLeagueId == league.id
                                 ) {
                                     selectedLeagueId = league.id
+                                    selectedTeamId = nil
                                 }
                             }
                         }
                         .padding(.horizontal)
                         .padding(.vertical, 8)
+                    }
+
+                    // Team filter — only shown when a league is selected
+                    if !teams.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                FilterChip(label: "All", isSelected: selectedTeamId == nil) {
+                                    selectedTeamId = nil
+                                }
+                                ForEach(teams) { team in
+                                    FilterChip(
+                                        label: team.abbr,
+                                        isSelected: selectedTeamId == team.id
+                                    ) {
+                                        selectedTeamId = team.id
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
                     Divider()
@@ -102,7 +133,7 @@ struct GamesView: View {
                             }
                             .padding()
                             Spacer()
-                        } else if games.isEmpty {
+                        } else if displayedGames.isEmpty {
                             Spacer()
                             Text("No games scheduled")
                                 .foregroundStyle(.secondary)
@@ -110,7 +141,7 @@ struct GamesView: View {
                         } else {
                             ScrollView {
                                 LazyVStack(spacing: 12) {
-                                    ForEach(games) { game in
+                                    ForEach(displayedGames) { game in
                                         GameCard(game: game)
                                     }
                                 }
@@ -120,12 +151,23 @@ struct GamesView: View {
                         }
                     }
                 }
+                .animation(.easeInOut(duration: 0.2), value: teams.isEmpty)
             }
             .navigationTitle("Games")
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .task(id: fetchKey) { await fetchGames() }
+        .onChange(of: selectedLeagueId) { _, leagueId in
+            Task {
+                if let id = leagueId {
+                    await fetchTeams(leagueId: id)
+                } else {
+                    teams = []
+                    selectedTeamId = nil
+                }
+            }
+        }
     }
 
     private func fetchGames() async {
@@ -133,11 +175,19 @@ struct GamesView: View {
         errorMessage = nil
         games = []
         do {
-            games = try await service.fetchGames(date: selectedDate, leagueId: selectedLeagueId)
+            games = try await gameService.fetchGames(date: selectedDate, leagueId: selectedLeagueId)
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func fetchTeams(leagueId: Int) async {
+        do {
+            teams = try await teamService.fetchTeams(leagueId: leagueId)
+        } catch {
+            teams = []
+        }
     }
 }
 
