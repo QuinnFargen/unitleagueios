@@ -32,7 +32,12 @@ struct HomeView: View {
                         ScrollView {
                             LazyVStack(spacing: 12) {
                                 ForEach(leagues) { league in
-                                    LeagueCard(league: league)
+                                    NavigationLink {
+                                        TeamListView(league: league)
+                                    } label: {
+                                        LeagueCard(league: league)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
                             .padding(.horizontal)
