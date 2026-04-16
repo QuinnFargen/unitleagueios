@@ -40,30 +40,22 @@ struct GamesView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Date navigation
-                    HStack {
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.title3)
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                        }
-
-                        Spacer()
-
-                        Text(displayFormatter.string(from: selectedDate))
-                            .font(.headline)
-                            .foregroundStyle(.white)
-
-                        Spacer()
-
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            Image(systemName: "chevron.right")
-                                .font(.title3)
+                    HStack{
+                        // Date navigation
+                        HStack {
+                            Button {
+                                selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                            } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.title3)
+                                    .foregroundStyle(.white)
+                                    .frame(width: 44, height: 44)
+                            }
+                            
+                            Spacer()
+                            
+                            Text(displayFormatter.string(from: selectedDate))
+                                .font(.headline)
                                 .foregroundStyle(.white)
                                 .frame(width: 44, height: 44)
                         }
@@ -86,6 +78,22 @@ struct GamesView: View {
                         }
                         .padding(.horizontal)
                         .padding(.vertical, 8)
+                        
+                        // League filter
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(leagues, id: \.label) { league in
+                                    FilterChip(
+                                        label: league.label,
+                                        isSelected: selectedLeagueId == league.id
+                                    ) {
+                                        selectedLeagueId = league.id
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                        }
                     }
 
                     // Team filter — only shown when a league is selected
@@ -253,9 +261,9 @@ private struct GameCard: View {
 
             Spacer()
 
-            if let hs = game.homeScore, let as_ = game.awayScore {
+            if let hscore = game.homeScore, let ascore = game.awayScore {
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(as_) – \(hs)")
+                    Text("\(ascore) – \(hscore)")
                         .font(.headline)
                         .foregroundStyle(.white)
                     Text("FINAL")
