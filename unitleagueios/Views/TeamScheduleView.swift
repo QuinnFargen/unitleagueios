@@ -12,7 +12,10 @@ struct TeamScheduleView: View {
     private let schedService = SchedService()
 
     private var years: [Int] {
-        Array(league.yrOrig ... Calendar.current.component(.year, from: .now))
+        let currentYear = Calendar.current.component(.year, from: .now)
+        let start = max(league.yrOrig, 2020)
+        let end = currentYear + 1
+        return Array(start ... end)
     }
 
     var body: some View {
