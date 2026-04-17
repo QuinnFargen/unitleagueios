@@ -12,12 +12,12 @@ struct TeamListView: View {
     private let teamService = TeamService()
 
     private var confs: [String] {
-        Array(Set(teams.compactMap(\.conf))).sorted()
+        Array(Set(teams.filter { $0.id != 50000 && $0.id != 60000 }.compactMap(\.conf))).sorted()
     }
 
     private var divs: [String] {
         guard let conf = selectedConf else { return [] }
-        return Array(Set(teams.filter { $0.conf == conf }.compactMap(\.div))).sorted()
+        return Array(Set(teams.filter { $0.id != 50000 && $0.id != 60000 && $0.conf == conf }.compactMap(\.div))).sorted()
     }
 
     private var displayedTeams: [Team] {

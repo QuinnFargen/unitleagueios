@@ -15,7 +15,7 @@ struct GamesView: View {
 
     private let displayFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "EEE, MMM d"
+        f.dateFormat = "EEE, MMM d, yyyy"
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
@@ -62,9 +62,13 @@ struct GamesView: View {
                         Button {
                             showDatePicker = true
                         } label: {
-                            Text(displayFormatter.string(from: selectedDate))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                            HStack(spacing: 4) {
+                                Image(systemName: "calendar")
+                                    .font(.subheadline.weight(.semibold))
+                                Text(displayFormatter.string(from: selectedDate))
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                            .foregroundStyle(.white)
                         }
                         .sheet(isPresented: $showDatePicker) {
                             DatePickerSheet(selectedDate: $selectedDate)
@@ -245,8 +249,27 @@ private struct GameCard: View {
         return timeOutputFormatter.string(from: date)
     }
 
+    private var sportIcon: String {
+        switch game.leagueId {
+        case 1:  return "basketball"
+        case 2:  return "american.football.professional"
+        case 3:  return "hockey.puck"
+        case 4:  return "baseball"
+        case 5:  return "american.football"
+        case 6:  return "basketball.fill"
+        default: return "sportscourt"
+        }
+    }
+
     var body: some View {
         HStack {
+            Image(systemName: sportIcon)
+                .font(.title2)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(Color.white.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
                     Text(game.away)
