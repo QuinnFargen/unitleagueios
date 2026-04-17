@@ -152,7 +152,7 @@ private struct SchedCard: View {
                     .foregroundStyle(.white)
                 Text(formattedDate)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.background)
             }
 
             Spacer()

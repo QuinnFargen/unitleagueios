@@ -73,7 +73,7 @@ struct TeamBannerView: View {
                             .font(.title2).bold()
                             .foregroundStyle(.white)
                         if let mascot = team.mascot {
-                            Text(mascot)
+                            Label(mascot, systemImage: categoryIcon)
                                 .font(.caption)
                                 .foregroundStyle(.background)
                         }
@@ -112,12 +112,12 @@ struct TeamMetaRow: View {
             }
             if let region = team.region {
                 if !confDiv.isEmpty { Text("·").foregroundStyle(.tertiary) }
-                Text(region)
+                Label(region, systemImage: "location.fill")
             }
-            if team.category != nil {
-                if team.conf != nil || team.region != nil { Text("·").foregroundStyle(.tertiary) }
-                Image(systemName: categoryIcon)
-            }
+//            if team.category != nil {
+//                if team.conf != nil || team.region != nil { Text("·").foregroundStyle(.tertiary) }
+//                Image(systemName: categoryIcon)
+//            }
         }
         .font(.caption)
         .foregroundStyle(.background)
