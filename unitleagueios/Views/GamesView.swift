@@ -19,6 +19,15 @@ struct GamesView: View {
         return f
     }()
 
+    private var selectedYear: Int {
+        Calendar.current.component(.year, from: selectedDate)
+    }
+
+    private var years: [Int] {
+        let current = Calendar.current.component(.year, from: .now)
+        return Array(2020...current + 1)
+    }
+
     private var fetchKey: String {
         "\(selectedDate.timeIntervalSince1970)-\(selectedLeagueId ?? 0)"
     }
@@ -122,7 +131,7 @@ struct GamesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 4) {
                         Button {
                             selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
@@ -141,6 +150,29 @@ struct GamesView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.white)
                         }
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        ForEach(years.reversed(), id: \.self) { year in
+                            Button {
+                                selectedDate = Calendar.current.date(bySetting: .year, value: year, of: selectedDate) ?? selectedDate
+                            } label: {
+                                if year == selectedYear {
+                                    Label(String(year), systemImage: "checkmark")
+                                } else {
+                                    Text(String(year))
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(String(selectedYear))
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.white.opacity(0.15))
+                            .clipShape(Capsule())
+                            .foregroundStyle(.white)
                     }
                 }
             }
