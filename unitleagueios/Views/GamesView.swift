@@ -8,6 +8,7 @@ struct GamesView: View {
     @State private var teams: [Team] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showDatePicker = false
 
     private let gameService = GameService()
     private let teamService = TeamService()
@@ -48,6 +49,40 @@ struct GamesView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    // Date navigation row
+                    HStack(spacing: 12) {
+                        Button {
+                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                        }
+
+                        Button {
+                            showDatePicker = true
+                        } label: {
+                            Text(displayFormatter.string(from: selectedDate))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                        }
+                        .sheet(isPresented: $showDatePicker) {
+                            DatePickerSheet(selectedDate: $selectedDate)
+                        }
+
+                        Button {
+                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+
                     // League filter
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -131,32 +166,13 @@ struct GamesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    HStack(spacing: 4) {
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.subheadline)
-                                .foregroundStyle(.white)
-                        }
-                        Text(displayFormatter.string(from: selectedDate))
-                            .font(.subheadline)
-                            .foregroundStyle(.white)
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            Image(systemName: "chevron.right")
-                                .font(.subheadline)
-                                .foregroundStyle(.white)
-                        }
-                    }
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         ForEach(years.reversed(), id: \.self) { year in
                             Button {
-                                selectedDate = Calendar.current.date(bySetting: .year, value: year, of: selectedDate) ?? selectedDate
+                                var comps = Calendar.current.dateComponents([.month, .day], from: selectedDate)
+                                comps.year = year
+                                selectedDate = Calendar.current.date(from: comps) ?? selectedDate
                             } label: {
                                 if year == selectedYear {
                                     Label(String(year), systemImage: "checkmark")
@@ -295,6 +311,39 @@ private struct GameCard: View {
         .padding()
         .background(Color.white.opacity(0.07))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - DatePickerSheet
+
+private struct DatePickerSheet: View {
+    @Binding var selectedDate: Date
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                DatePicker(
+                    "",
+                    selection: $selectedDate,
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .tint(.white)
+                .colorScheme(.dark)
+                .padding(.horizontal)
+            }
+            .navigationTitle("Select Date")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .foregroundStyle(.white)
+                }
+            }
+        }
     }
 }
 
