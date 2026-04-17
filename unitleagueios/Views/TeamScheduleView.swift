@@ -4,10 +4,15 @@ struct TeamScheduleView: View {
     let team: Team
     let league: League
 
-    @State private var selectedYear: Int = Calendar.current.component(.year, from: .now) - 1
+    @State private var selectedYear: Int = Calendar.current.component(.year, from: .now)
     @State private var schedule: [Sched] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var scrollTarget: Int? = nil
+
+    private var lastFinalId: Int? {
+        schedule.first { $0.teamScore != nil && $0.oppScore != nil }?.id
+    }
 
     private let schedService = SchedService()
 
@@ -57,14 +62,21 @@ struct TeamScheduleView: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                     } else {
-                        ScrollView {
-                            LazyVStack(spacing: 12) {
-                                ForEach(schedule) { entry in
-                                    SchedCard(entry: entry)
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                LazyVStack(spacing: 12) {
+                                    ForEach(schedule) { entry in
+                                        SchedCard(entry: entry, isHighlighted: entry.id == lastFinalId)
+                                            .id(entry.id)
+                                    }
                                 }
+                                .padding(.horizontal)
+                                .padding(.top, 12)
                             }
-                            .padding(.horizontal)
-                            .padding(.top, 12)
+                            .onChange(of: scrollTarget) { _, target in
+                                guard let id = target else { return }
+                                withAnimation { proxy.scrollTo(id, anchor: .center) }
+                            }
                         }
                     }
                 }
@@ -105,9 +117,11 @@ struct TeamScheduleView: View {
         isLoading = true
         errorMessage = nil
         schedule = []
+        scrollTarget = nil
         do {
             let raw = try await schedService.fetchSchedule(teamId: team.id, yr: selectedYear)
-            schedule = raw.sorted { $0.gameNum < $1.gameNum }
+            schedule = raw.sorted { $0.gameNum > $1.gameNum }
+            scrollTarget = lastFinalId
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -119,6 +133,7 @@ struct TeamScheduleView: View {
 
 private struct SchedCard: View {
     let entry: Sched
+    var isHighlighted: Bool = false
 
     private let dateInputFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -129,7 +144,7 @@ private struct SchedCard: View {
 
     private let dateOutputFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "MMM d"
+        f.dateFormat = "EEE, MMM d, yyyy"
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
@@ -177,6 +192,11 @@ private struct SchedCard: View {
         .padding()
         .background(Color.white.opacity(0.07))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+                .opacity(isHighlighted ? 1 : 0)
+        )
     }
 }
 
