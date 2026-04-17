@@ -51,8 +51,13 @@ struct TeamScheduleView: View {
 
     private var categoryIcon: String {
         switch team.category ?? "" {
-        case "Person":  return "questionmark"  // fill in
-        case "Animal":  return "questionmark"  // fill in
+        case "Person":  return "person"
+        case "Animal":  return "pawprint"
+        case "Bird":    return "bird"
+        case "Cat":     return "cat"
+        case "Dog":     return "dog"
+        case "Color":   return "paintpalette"
+        case "Imaginary":   return "questionmark"
         default:        return "questionmark"
         }
     }
@@ -65,12 +70,12 @@ struct TeamScheduleView: View {
                 // Team header
                 ZStack(alignment: .bottomLeading) {
                     LinearGradient(
-                        colors: [teamColor.opacity(0.55), Color.black],
+                        colors: [Color.black, teamColor.opacity(0.20)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                     .frame(maxWidth: .infinity)
-                    .frame(height: 110)
+                    .frame(height: 80)
 
                     HStack(alignment: .center, spacing: 14) {
                         Image(systemName: sportIcon)
@@ -87,11 +92,11 @@ struct TeamScheduleView: View {
                                     .foregroundStyle(.white)
                                 if let mascot = team.mascot {
                                     Text(mascot)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
+                                        .font(.caption)
+                                        .foregroundStyle(.background)
                                 }
                             }
-
+                            
                             TeamMetaRow(team: team, categoryIcon: categoryIcon)
                         }
                         Spacer()
@@ -197,11 +202,11 @@ private struct TeamMetaRow: View {
             }
             if let cat = team.category {
                 if team.conf != nil || team.region != nil { Text("·").foregroundStyle(.tertiary) }
-                Label(cat, systemImage: categoryIcon)
+                Image( systemName: categoryIcon)
             }
         }
         .font(.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.background)
     }
 }
 
@@ -268,4 +273,10 @@ private struct SchedCard: View {
         .background(Color.white.opacity(0.07))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
+}
+
+
+
+#Preview {
+    MainTabView()
 }
