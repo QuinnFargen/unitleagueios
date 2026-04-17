@@ -102,7 +102,7 @@ struct TeamListView: View {
                                 NavigationLink {
                                     TeamScheduleView(team: team, league: league)
                                 } label: {
-                                    TeamCard(team: team)
+                                    TeamBannerView(team: team, league: league, showChevron: true)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -132,30 +132,3 @@ struct TeamListView: View {
     }
 }
 
-// MARK: - TeamCard
-
-private struct TeamCard: View {
-    let team: Team
-
-    var body: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(team.abbr)
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text(team.name)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        }
-        .padding()
-        .background(Color.white.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
