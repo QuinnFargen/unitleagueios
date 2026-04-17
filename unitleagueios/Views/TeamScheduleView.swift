@@ -18,11 +18,88 @@ struct TeamScheduleView: View {
         return Array(start ... end)
     }
 
+    private var teamColor: Color {
+        switch team.color ?? "" {
+        case "Blue":         return Color(red: 0.10, green: 0.25, blue: 0.80)
+        case "Red":          return .red
+        case "Green":        return .green
+        case "Orange":       return .orange
+        case "Purple":       return .purple
+        case "Yellow":       return .yellow
+        case "White":        return .white
+        case "Black":        return Color(white: 0.15)
+        case "Brown":        return Color(red: 0.55, green: 0.27, blue: 0.07)
+        case "Gray", "Grey": return .gray
+        case "Gold":         return Color(red: 1.0, green: 0.75, blue: 0.0)
+        case "Crimson":      return Color(red: 0.70, green: 0.07, blue: 0.07)
+        case "Navy":         return Color(red: 0.0, green: 0.0, blue: 0.50)
+        default:             return .gray
+        }
+    }
+
+    private var sportIcon: String {
+        switch league.id {
+        case 1:  return "basketball"
+        case 2:  return "american.football.professional"
+        case 3:  return "hockey.puck"
+        case 4:  return "baseball"
+        case 5:  return "american.football"
+        case 6:  return "basketball.fill"
+        default: return "sportscourt"
+        }
+    }
+
+    private var categoryIcon: String {
+        switch team.category ?? "" {
+        case "Person":  return "questionmark"  // fill in
+        case "Animal":  return "questionmark"  // fill in
+        default:        return "questionmark"
+        }
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
+                // Team header
+                ZStack(alignment: .bottomLeading) {
+                    LinearGradient(
+                        colors: [teamColor.opacity(0.55), Color.black],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 110)
+
+                    HStack(alignment: .center, spacing: 14) {
+                        Image(systemName: sportIcon)
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 48, height: 48)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Text(team.abbr)
+                                    .font(.title2).bold()
+                                    .foregroundStyle(.white)
+                                if let mascot = team.mascot {
+                                    Text(mascot)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            TeamMetaRow(team: team, categoryIcon: categoryIcon)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 14)
+                }
+
                 // Year capsule row
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -81,7 +158,7 @@ struct TeamScheduleView: View {
                 }
             }
         }
-        .navigationTitle(team.abbr)
+        .navigationTitle(team.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .task(id: selectedYear) { await fetchSchedule() }
@@ -98,6 +175,33 @@ struct TeamScheduleView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+}
+
+// MARK: - TeamMetaRow
+
+private struct TeamMetaRow: View {
+    let team: Team
+    let categoryIcon: String
+
+    var body: some View {
+        let confDiv = [team.conf, team.div].compactMap { $0 }.joined(separator: " · ")
+
+        HStack(spacing: 6) {
+            if !confDiv.isEmpty {
+                Text(confDiv)
+            }
+            if let region = team.region {
+                if !confDiv.isEmpty { Text("·").foregroundStyle(.tertiary) }
+                Text(region)
+            }
+            if let cat = team.category {
+                if team.conf != nil || team.region != nil { Text("·").foregroundStyle(.tertiary) }
+                Label(cat, systemImage: categoryIcon)
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 }
 
