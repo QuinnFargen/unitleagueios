@@ -81,14 +81,14 @@ struct TeamScheduleView: View {
                             selectedYear = year
                         } label: {
                             if year == selectedYear {
-                                Label("\(year)", systemImage: "checkmark")
+                                Label(String(year), systemImage: "checkmark")
                             } else {
-                                Text("\(year)")
+                                Text(String(year))
                             }
                         }
                     }
                 } label: {
-                    Text("\(selectedYear)")
+                    Text(String(selectedYear))
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 5)

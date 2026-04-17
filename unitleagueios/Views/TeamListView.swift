@@ -22,6 +22,7 @@ struct TeamListView: View {
 
     private var displayedTeams: [Team] {
         teams.filter { team in
+            if team.id == 50000 || team.id == 60000 { return false }
             if let conf = selectedConf, team.conf != conf { return false }
             if let div = selectedDiv, team.div != div { return false }
             return true
