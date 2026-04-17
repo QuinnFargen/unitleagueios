@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct HomeView: View {
+struct LeagueView: View {
     @State private var leagues: [League] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -113,5 +113,5 @@ struct LeagueCard: View {
 }
 
 #Preview {
-    HomeView()
+    LeagueView()
 }
