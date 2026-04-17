@@ -78,7 +78,7 @@ struct GamesView: View {
                                 .foregroundStyle(.white)
                         }
 
-                        Spacer()
+//                        Spacer()
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 10)
@@ -165,33 +165,6 @@ struct GamesView: View {
             .navigationTitle("Games")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        ForEach(years.reversed(), id: \.self) { year in
-                            Button {
-                                var comps = Calendar.current.dateComponents([.month, .day], from: selectedDate)
-                                comps.year = year
-                                selectedDate = Calendar.current.date(from: comps) ?? selectedDate
-                            } label: {
-                                if year == selectedYear {
-                                    Label(String(year), systemImage: "checkmark")
-                                } else {
-                                    Text(String(year))
-                                }
-                            }
-                        }
-                    } label: {
-                        Text(String(selectedYear))
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
-                            .background(Color.white.opacity(0.15))
-                            .clipShape(Capsule())
-                            .foregroundStyle(.white)
-                    }
-                }
-            }
         }
         .task(id: fetchKey) { await fetchGames() }
         .onChange(of: selectedLeagueId) { _, leagueId in

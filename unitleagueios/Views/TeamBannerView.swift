@@ -44,7 +44,7 @@ struct TeamBannerView: View {
         case "Cat":       return "cat"
         case "Dog":       return "dog"
         case "Color":     return "paintpalette"
-        case "Imaginary": return "questionmark"
+        case "Imaginary": return "person.fill.questionmark"
         default:          return "questionmark"
         }
     }
