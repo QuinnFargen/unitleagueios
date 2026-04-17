@@ -82,7 +82,15 @@ struct GamesView: View {
                                 .foregroundStyle(.white)
                         }
 
-//                        Spacer()
+                        Button("Today") {
+                            selectedDate = .now
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(Capsule())
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 10)
