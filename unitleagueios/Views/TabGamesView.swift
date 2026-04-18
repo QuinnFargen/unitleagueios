@@ -24,6 +24,20 @@ struct TabGamesView: View {
         Calendar.current.component(.year, from: selectedDate)
     }
 
+    private var prevDayNumber: Int {
+        let prev = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+        return Calendar.current.component(.day, from: prev)
+    }
+
+    private var nextDayNumber: Int {
+        let next = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+        return Calendar.current.component(.day, from: next)
+    }
+
+    private var todayDayNumber: Int {
+        Calendar.current.component(.day, from: .now)
+    }
+
     private var years: [Int] {
         let current = Calendar.current.component(.year, from: .now)
         return Array(2020...current + 1)
@@ -54,8 +68,8 @@ struct TabGamesView: View {
                         Button {
                             selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
                         } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.subheadline.weight(.semibold))
+                            Image(systemName: "\(prevDayNumber).circle")
+                                .font(.title3.weight(.semibold))
                                 .foregroundStyle(.white)
                         }
 
@@ -77,17 +91,19 @@ struct TabGamesView: View {
                         Button {
                             selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
                         } label: {
-                            Image(systemName: "chevron.right")
-                                .font(.subheadline.weight(.semibold))
+                            Image(systemName: "\(nextDayNumber).circle")
+                                .font(.title3.weight(.semibold))
                                 .foregroundStyle(.white)
                         }
 
-                        Button("Today") {
+                        Button {
                             selectedDate = .now
+                        } label: {
+                            Image(systemName: "\(todayDayNumber).circle.fill")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.white)
                         }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(Color.white.opacity(0.1))
                         .clipShape(Capsule())
@@ -173,6 +189,19 @@ struct TabGamesView: View {
                     }
                 }
                 .animation(.easeInOut(duration: 0.2), value: teams.isEmpty)
+                .gesture(
+                    DragGesture(minimumDistance: 40, coordinateSpace: .local)
+                        .onEnded { value in
+                            let horizontal = value.translation.width
+                            let vertical = abs(value.translation.height)
+                            guard abs(horizontal) > vertical else { return }
+                            if horizontal < 0 {
+                                selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+                            } else {
+                                selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                            }
+                        }
+                )
             }
             .navigationTitle("Games")
             .navigationBarTitleDisplayMode(.inline)
