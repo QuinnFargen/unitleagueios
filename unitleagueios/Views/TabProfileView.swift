@@ -3,6 +3,7 @@ import AuthenticationServices
 
 struct TabProfileView: View {
     @AppStorage("appleUserName") private var userName: String = ""
+    @State private var authError: String?
 
     var body: some View {
         ZStack {
@@ -24,14 +25,26 @@ struct TabProfileView: View {
                             let last = credential.fullName?.familyName ?? ""
                             userName = [first, last].filter { !$0.isEmpty }.joined(separator: " ")
                             if userName.isEmpty { userName = "Player" }
-                        case .failure:
-                            break
+                        case .failure(let error):
+                            let asError = error as? ASAuthorizationError
+                            // Code 1001 = user cancelled — don't show an alert
+                            if asError?.code != .canceled {
+                                authError = "Sign in failed. Make sure you're signed into an Apple ID in Settings."
+                            }
                         }
                     }
                     .signInWithAppleButtonStyle(.white)
                     .frame(height: 50)
                     .frame(maxWidth: 280)
                     .cornerRadius(8)
+                    
+                    if let msg = authError {
+                        Text(msg)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
                 }
             } else {
                 VStack(spacing: 16) {
