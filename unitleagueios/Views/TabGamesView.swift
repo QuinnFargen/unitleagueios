@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct GamesView: View {
+struct TabGamesView: View {
     @State private var selectedDate: Date = .now
     @State private var selectedLeagueId: Int? = nil
     @State private var selectedTeamId: Int? = nil
@@ -352,5 +352,5 @@ private struct DatePickerSheet: View {
 }
 
 #Preview {
-    GamesView()
+    TabGamesView()
 }

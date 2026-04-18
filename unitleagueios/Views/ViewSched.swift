@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TeamScheduleView: View {
+struct ViewSched: View {
     let team: Team
     let league: League
 
@@ -28,7 +28,7 @@ struct TeamScheduleView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                TeamBannerView(team: team, league: league)
+                ViewTeamBanner(team: team, league: league)
                     .padding(.horizontal)
                     .padding(.top, 8)
 

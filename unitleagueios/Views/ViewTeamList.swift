@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TeamListView: View {
+struct ViewTeamList: View {
     let league: League
 
     @State private var teams: [Team] = []
@@ -101,9 +101,9 @@ struct TeamListView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(displayedTeams) { team in
                                 NavigationLink {
-                                    TeamScheduleView(team: team, league: league)
+                                    ViewSched(team: team, league: league)
                                 } label: {
-                                    TeamBannerView(team: team, league: league, showChevron: true)
+                                    ViewTeamBanner(team: team, league: league, showChevron: true)
                                 }
                                 .buttonStyle(.plain)
                             }

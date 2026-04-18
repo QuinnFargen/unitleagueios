@@ -3,12 +3,17 @@ import SwiftUI
 struct MainTabView: View {
     var body: some View {
         TabView {
-            LeagueView()
+            TabResearchView()
                 .tabItem {
                     Label("Leagues", systemImage: "person.3")
                 }
+            
+            TabResearchView()
+                .tabItem {
+                    Label("Research", systemImage: "plus.forwardslash.minus")
+                }
 
-            GamesView()
+            TabGamesView()
                 .tabItem {
                     Label("Games", systemImage: "gamecontroller")
                 }
@@ -16,11 +21,6 @@ struct MainTabView: View {
             PlaceholderView(title: "Bets")
                 .tabItem {
                     Label("Bets", systemImage: "bitcoinsign.bank.building")
-                }
-            
-            PlaceholderView(title: "Losses")
-                .tabItem {
-                    Label("Losses", systemImage: "wallet.bifold.fill")
                 }
 
             PlaceholderView(title: "Profile")

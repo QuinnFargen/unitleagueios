@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TeamBannerView: View {
+struct ViewTeamBanner: View {
     let team: Team
     let league: League
     var showChevron: Bool = false
@@ -10,15 +10,14 @@ struct TeamBannerView: View {
         case "Blue":         return Color(red: 0.10, green: 0.25, blue: 0.80)
         case "Red":          return .red
         case "Green":        return .green
-        case "Orange":       return .orange
-        case "Purple":       return .purple
         case "Yellow":       return .yellow
-        case "White":        return .white
         case "Black":        return Color(white: 0.15)
+        case "Purple":       return .purple
+        case "Orange":       return .orange
         case "Brown":        return Color(red: 0.55, green: 0.27, blue: 0.07)
-        case "Gray", "Grey": return .gray
+        case "White":        return .white
+        case "Gray":         return .gray
         case "Gold":         return Color(red: 1.0, green: 0.75, blue: 0.0)
-        case "Crimson":      return Color(red: 0.70, green: 0.07, blue: 0.07)
         case "Navy":         return Color(red: 0.0, green: 0.0, blue: 0.50)
         default:             return .gray
         }
@@ -52,7 +51,7 @@ struct TeamBannerView: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             LinearGradient(
-                colors: [Color.black, teamColor.opacity(0.20)],
+                colors: [Color.primary, teamColor.opacity(0.20)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

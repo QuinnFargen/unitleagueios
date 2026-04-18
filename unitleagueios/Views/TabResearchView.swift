@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct LeagueView: View {
+struct TabResearchView: View {
     @State private var leagues: [League] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -33,7 +33,7 @@ struct LeagueView: View {
                             LazyVStack(spacing: 12) {
                                 ForEach(leagues) { league in
                                     NavigationLink {
-                                        TeamListView(league: league)
+                                        ViewTeamList(league: league)
                                     } label: {
                                         LeagueCard(league: league)
                                     }
@@ -113,5 +113,5 @@ struct LeagueCard: View {
 }
 
 #Preview {
-    LeagueView()
+    TabResearchView()
 }
