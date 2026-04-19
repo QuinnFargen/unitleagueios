@@ -4,6 +4,8 @@ struct TabLeaguesView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("userLeagues") private var userLeaguesData: Data = Data()
+    @AppStorage("leagueSymbol") private var leagueSymbol: String = LeagueOption.symbols[0]
+    @AppStorage("leagueColorName") private var leagueColorName: String = LeagueOption.colorNames[0]
     @State private var showingJoin = false
     @State private var showingCreate = false
     @State private var leagues: [League] = []
@@ -15,55 +17,98 @@ struct TabLeaguesView: View {
     }
 
     var body: some View {
-        ZStack {
-            theme.appBackground(colorScheme).ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                theme.appBackground(colorScheme).ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 24) {
-                    Text("Leagues")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundStyle(theme.primaryText(colorScheme))
+                ScrollView {
+                    VStack(spacing: 24) {
+                        LeagueActionButton(title: "Join League", icon: "person.badge.plus") {
+                            showingJoin = true
+                        }
 
-                    Spacer().frame(height: 8)
+                        LeagueActionButton(title: "Create League", icon: "plus.circle") {
+                            showingCreate = true
+                        }
 
-                    LeagueActionButton(title: "Join League", icon: "person.badge.plus") {
-                        showingJoin = true
-                    }
-
-                    LeagueActionButton(title: "Create League", icon: "plus.circle") {
-                        showingCreate = true
-                    }
-
-                    if !userLeagues.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("My Leagues")
-                                .font(.headline)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("League Badge")
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 32)
 
-                            ForEach(userLeagues) { league in
-                                UserLeagueCard(userLeague: league)
+                            HStack(spacing: 14) {
+                                ForEach(LeagueOption.symbols, id: \.self) { symbol in
+                                    Button { leagueSymbol = symbol } label: {
+                                        Image(systemName: symbol)
+                                            .font(.title2)
+                                            .foregroundStyle(leagueSymbol == symbol ? theme.primaryText(colorScheme) : .secondary)
+                                            .frame(width: 52, height: 52)
+                                            .background(leagueSymbol == symbol ? theme.cardBackgroundProminent(colorScheme) : Color.clear)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(
+                                                        leagueSymbol == symbol ? theme.primaryText(colorScheme).opacity(0.4) : Color.clear,
+                                                        lineWidth: 1.5
+                                                    )
+                                            )
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+
+                            HStack(spacing: 16) {
+                                ForEach(LeagueOption.colorNames, id: \.self) { name in
+                                    Button { leagueColorName = name } label: {
+                                        Circle()
+                                            .fill(ProfileOption.color(for: name))
+                                            .frame(width: 40, height: 40)
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(theme.primaryText(colorScheme), lineWidth: leagueColorName == name ? 2.5 : 0)
+                                            )
+                                            .shadow(
+                                                color: ProfileOption.color(for: name).opacity(leagueColorName == name ? 0.6 : 0),
+                                                radius: 6
+                                            )
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 32)
+                        }
+
+                        if !userLeagues.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("My Leagues")
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                ForEach(userLeagues) { league in
+                                    UserLeagueCard(userLeague: league)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 16)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 32)
-                .padding(.top, 16)
-                .padding(.bottom, 32)
             }
-        }
-        .sheet(isPresented: $showingJoin) {
-            LeagueFormSheet(title: "Join League", confirmLabel: "Join", leagues: leagues) { newLeague in
-                append(newLeague)
+            .tabToolbar()
+            .sheet(isPresented: $showingJoin) {
+                LeagueFormSheet(title: "Join League", confirmLabel: "Join", leagues: leagues) { newLeague in
+                    append(newLeague)
+                }
             }
-        }
-        .sheet(isPresented: $showingCreate) {
-            LeagueFormSheet(title: "Create League", confirmLabel: "Create", leagues: leagues) { newLeague in
-                append(newLeague)
+            .sheet(isPresented: $showingCreate) {
+                LeagueFormSheet(title: "Create League", confirmLabel: "Create", leagues: leagues) { newLeague in
+                    append(newLeague)
+                }
             }
+            .task { fetchLeagues() }
         }
-        .task { fetchLeagues() }
     }
 
     private func fetchLeagues() {

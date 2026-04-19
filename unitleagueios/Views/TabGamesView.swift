@@ -219,8 +219,7 @@ struct TabGamesView: View {
                         }
                 )
             }
-            .navigationTitle("Games")
-            .navigationBarTitleDisplayMode(.inline)
+            .tabToolbar()
         }
         .task(id: fetchKey) { await fetchGames() }
         .onChange(of: selectedLeagueId) { _, leagueId in
