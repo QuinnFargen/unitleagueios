@@ -30,51 +30,33 @@ struct TabToolbar: ViewModifier {
     @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
     @AppStorage("leagueColorName") private var leagueColorName: String = LeagueOption.colorNames[0]
     @AppStorage("userUnits")       private var userUnits: Int          = 100
-    @AppStorage("leaguePnL")       private var leaguePnL: Int          = 5
 
-    private var rankInfo: (rank: Int, diff: Int?) {
-        let allUnits = (DummyLeagueMembers.all.map(\.units) + [userUnits]).sorted(by: >)
-        let rank = (allUnits.firstIndex(of: userUnits) ?? 0) + 1
-        if rank == 1 {
-            let secondUnits = allUnits.count > 1 ? allUnits[1] : userUnits
-            return (rank, userUnits - secondUnits)
-        } else {
-            return (rank, userUnits - allUnits[0])
-        }
-    }
-
-    private func ordinal(_ n: Int) -> String {
-        switch n {
-        case 1:  return "1st"
-        case 2:  return "2nd"
-        case 3:  return "3rd"
-        default: return "\(n)th"
-        }
-    }
+    // TODO: replace with API values
+    private let sampleRank  = "2nd"
+    private let sampleDiff  = "-15"
+    private let samplePnL   = "+5"
 
     private var leagueLeadingItem: some View {
-        let (rank, diff) = rankInfo
-        return HStack(spacing: 6) {
+        HStack(spacing: 6) {
             Image(systemName: leagueSymbol)
                 .font(.title2)
                 .foregroundStyle(ProfileOption.color(for: leagueColorName))
 
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
-                    Text(ordinal(rank))
+                    Text(sampleRank)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(theme.primaryText(colorScheme))
-                    if let diff {
-                        Text(diff >= 0 ? "+\(diff)" : "\(diff)")
-                            .font(.caption2)
-                            .foregroundStyle(diff >= 0 ? Color.green : theme.error)
-                    }
+                    Text(sampleDiff)
+                        .font(.caption2)
+                        .foregroundStyle(theme.error)
                 }
-                Text(leaguePnL >= 0 ? "+\(leaguePnL)" : "\(leaguePnL)")
+                Text(samplePnL)
                     .font(.caption2)
-                    .foregroundStyle(leaguePnL >= 0 ? Color.green : theme.error)
+                    .foregroundStyle(Color.green)
             }
         }
+        .fixedSize()
     }
 
     func body(content: Content) -> some View {
