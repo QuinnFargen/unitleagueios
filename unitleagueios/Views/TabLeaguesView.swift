@@ -6,10 +6,6 @@ struct TabLeaguesView: View {
     @AppStorage("userLeagues") private var userLeaguesData: Data = Data()
     @State private var showingJoin = false
     @State private var showingCreate = false
-    @State private var leagues: [League] = []
-    @State private var isLoadingLeagues = false
-
-    private let service = LeagueService()
 
     private var userLeagues: [UserLeague] {
         (try? JSONDecoder().decode([UserLeague].self, from: userLeaguesData)) ?? []
@@ -54,24 +50,15 @@ struct TabLeaguesView: View {
             }
             .tabToolbar()
             .sheet(isPresented: $showingJoin) {
-                LeagueFormSheet(title: "Join League", confirmLabel: "Join", leagues: leagues, isLoading: isLoadingLeagues) { newLeague in
+                LeagueFormSheet(title: "Join League", confirmLabel: "Join") { newLeague in
                     append(newLeague)
                 }
             }
             .sheet(isPresented: $showingCreate) {
-                LeagueFormSheet(title: "Create League", confirmLabel: "Create", leagues: leagues, isLoading: isLoadingLeagues) { newLeague in
+                LeagueFormSheet(title: "Create League", confirmLabel: "Create") { newLeague in
                     append(newLeague)
                 }
             }
-            .task { fetchLeagues() }
-        }
-    }
-
-    private func fetchLeagues() {
-        isLoadingLeagues = true
-        Task {
-            leagues = (try? await service.fetchLeagues()) ?? []
-            isLoadingLeagues = false
         }
     }
 
@@ -175,19 +162,35 @@ private struct LeagueFormSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     let title: String
     let confirmLabel: String
-    let leagues: [League]
-    let isLoading: Bool
     let onConfirm: (UserLeague) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var leagues: [League] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
     @State private var selectedLeagueId: Int?
     @State private var leagueName = ""
     @State private var selectedColorName: String = LeagueOption.colorNames[0]
     @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
     @AppStorage("leagueColorName") private var leagueColorName: String = LeagueOption.colorNames[0]
 
+    private let service = LeagueService()
+
     private var selectedLeague: League? {
         leagues.first { $0.id == selectedLeagueId }
+    }
+
+    private func fetchLeagues() {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                leagues = try await service.fetchLeagues()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        }
     }
 
     var body: some View {
@@ -202,6 +205,14 @@ private struct LeagueFormSheet: View {
                                 ProgressView()
                                 Text("Loading leagues...")
                                     .foregroundStyle(.secondary)
+                            }
+                        } else if let error = errorMessage {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Button("Retry") { fetchLeagues() }
+                                    .font(.caption)
                             }
                         } else if leagues.isEmpty {
                             Text("No leagues available")
@@ -252,6 +263,7 @@ private struct LeagueFormSheet: View {
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            .task { fetchLeagues() }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(confirmLabel) {

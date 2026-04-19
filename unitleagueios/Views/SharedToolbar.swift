@@ -52,34 +52,38 @@ struct TabToolbar: ViewModifier {
         }
     }
 
+    private var leagueLeadingItem: some View {
+        let (rank, diff) = rankInfo
+        return HStack(spacing: 6) {
+            Image(systemName: leagueSymbol)
+                .font(.title2)
+                .foregroundStyle(ProfileOption.color(for: leagueColorName))
+
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
+                    Text(ordinal(rank))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                    if let diff {
+                        Text(diff >= 0 ? "+\(diff)" : "\(diff)")
+                            .font(.caption2)
+                            .foregroundStyle(diff >= 0 ? Color.green : theme.error)
+                    }
+                }
+                Text(leaguePnL >= 0 ? "+\(leaguePnL)" : "\(leaguePnL)")
+                    .font(.caption2)
+                    .foregroundStyle(leaguePnL >= 0 ? Color.green : theme.error)
+            }
+        }
+    }
+
     func body(content: Content) -> some View {
         content
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    let (rank, diff) = rankInfo
-                    HStack(spacing: 6) {
-                        Image(systemName: leagueSymbol)
-                            .font(.title2)
-                            .foregroundStyle(ProfileOption.color(for: leagueColorName))
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            HStack(spacing: 4) {
-                                Text(ordinal(rank))
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                                if let diff {
-                                    Text(diff >= 0 ? "+\(diff)" : "\(diff)")
-                                        .font(.caption2)
-                                        .foregroundStyle(diff >= 0 ? Color.green : theme.error)
-                                }
-                            }
-                            Text(leaguePnL >= 0 ? "+\(leaguePnL)" : "\(leaguePnL)")
-                                .font(.caption2)
-                                .foregroundStyle(leaguePnL >= 0 ? Color.green : theme.error)
-                        }
-                    }
+                    leagueLeadingItem
                 }
                 ToolbarItem(placement: .principal) {
                     Image("UNIT_Logo")
