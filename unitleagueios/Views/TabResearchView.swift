@@ -72,21 +72,9 @@ struct LeagueCard: View {
     @Environment(\.colorScheme) private var colorScheme
     let league: League
 
-    var sportIcon: String {
-        switch league.id {
-        case 1:   return "basketball"
-        case 2:   return "american.football"
-        case 3:   return "hockey.puck"
-        case 4:   return "baseball"
-        case 5:   return "american.football.fill"
-        case 6:   return "basketball.fill"
-        default:       return "sportscourt"
-        }
-    }
-
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: sportIcon)
+            Image(systemName: league.sportIcon)
                 .font(.title2)
                 .foregroundStyle(theme.primaryText(colorScheme))
                 .frame(width: 44, height: 44)
