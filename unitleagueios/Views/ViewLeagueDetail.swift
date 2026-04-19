@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct LeagueDetailView: View {
+struct ViewLeagueDetail: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("userLeagues")      private var userLeaguesData: Data    = Data()
@@ -9,6 +9,8 @@ struct LeagueDetailView: View {
     @AppStorage("profileSymbol")    private var profileSymbol: String    = ProfileOption.symbols[0]
     @AppStorage("profileColorName") private var profileColorName: String = ProfileOption.colorNames[0]
     @AppStorage("userUnits")        private var userUnits: Int           = 100
+    @AppStorage("leagueSymbol")     private var leagueSymbol: String     = "sportscourt"
+    @AppStorage("leagueColorName")  private var leagueColorName: String  = LeagueOption.colorNames[0]
     @Environment(\.dismiss)         private var dismiss
 
     let userLeague: UserLeague
@@ -77,17 +79,31 @@ struct LeagueDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal, 16)
 
-                    // Delete button
-                    Button {
-                        deleteLeague()
-                    } label: {
-                        Text("Delete League")
-                            .font(.body).fontWeight(.medium)
-                            .foregroundStyle(theme.error)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(theme.error.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    VStack(spacing: 12) {
+                        Button {
+                            leagueSymbol    = League.sportIcon(for: userLeague.leagueId)
+                            leagueColorName = userLeague.colorName
+                        } label: {
+                            Text("Set as Active League")
+                                .font(.body).fontWeight(.medium)
+                                .foregroundStyle(ProfileOption.color(for: userLeague.colorName))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(ProfileOption.color(for: userLeague.colorName).opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+
+                        Button {
+                            deleteLeague()
+                        } label: {
+                            Text("Delete League")
+                                .font(.body).fontWeight(.medium)
+                                .foregroundStyle(theme.error)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(theme.error.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 32)

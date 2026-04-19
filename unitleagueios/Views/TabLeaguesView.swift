@@ -7,6 +7,7 @@ struct TabLeaguesView: View {
     @State private var showingJoin = false
     @State private var showingCreate = false
     @State private var leagues: [League] = []
+    @State private var isLoadingLeagues = false
 
     private let service = LeagueService()
 
@@ -38,7 +39,7 @@ struct TabLeaguesView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                 ForEach(userLeagues) { league in
-                                    NavigationLink(destination: LeagueDetailView(userLeague: league)) {
+                                    NavigationLink(destination: ViewLeagueDetail(userLeague: league)) {
                                         UserLeagueCard(userLeague: league)
                                     }
                                     .buttonStyle(.plain)
@@ -53,12 +54,12 @@ struct TabLeaguesView: View {
             }
             .tabToolbar()
             .sheet(isPresented: $showingJoin) {
-                LeagueFormSheet(title: "Join League", confirmLabel: "Join", leagues: leagues) { newLeague in
+                LeagueFormSheet(title: "Join League", confirmLabel: "Join", leagues: leagues, isLoading: isLoadingLeagues) { newLeague in
                     append(newLeague)
                 }
             }
             .sheet(isPresented: $showingCreate) {
-                LeagueFormSheet(title: "Create League", confirmLabel: "Create", leagues: leagues) { newLeague in
+                LeagueFormSheet(title: "Create League", confirmLabel: "Create", leagues: leagues, isLoading: isLoadingLeagues) { newLeague in
                     append(newLeague)
                 }
             }
@@ -67,8 +68,10 @@ struct TabLeaguesView: View {
     }
 
     private func fetchLeagues() {
+        isLoadingLeagues = true
         Task {
             leagues = (try? await service.fetchLeagues()) ?? []
+            isLoadingLeagues = false
         }
     }
 
@@ -173,6 +176,7 @@ private struct LeagueFormSheet: View {
     let title: String
     let confirmLabel: String
     let leagues: [League]
+    let isLoading: Bool
     let onConfirm: (UserLeague) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -193,12 +197,15 @@ private struct LeagueFormSheet: View {
 
                 Form {
                     Section("Select League") {
-                        if leagues.isEmpty {
+                        if isLoading {
                             HStack(spacing: 10) {
                                 ProgressView()
                                 Text("Loading leagues...")
                                     .foregroundStyle(.secondary)
                             }
+                        } else if leagues.isEmpty {
+                            Text("No leagues available")
+                                .foregroundStyle(.secondary)
                         } else {
                             ForEach(leagues) { league in
                                 LeagueOptionRow(

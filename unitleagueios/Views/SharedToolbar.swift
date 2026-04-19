@@ -58,27 +58,13 @@ struct TabToolbar: ViewModifier {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Image(systemName: leagueSymbol)
-                        .font(.title2)
-                        .foregroundStyle(ProfileOption.color(for: leagueColorName))
-                }
-                ToolbarItem(placement: .principal) {
-                    Image("UNIT_Logo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 100)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
                     let (rank, diff) = rankInfo
-                    HStack(spacing: 10) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "nairasign.circle.fill")
-                            Text("\(userUnits)").fontWeight(.semibold)
-                        }
-                        .font(.subheadline)
-                        .foregroundStyle(theme.primaryText(colorScheme))
+                    HStack(spacing: 6) {
+                        Image(systemName: leagueSymbol)
+                            .font(.title2)
+                            .foregroundStyle(ProfileOption.color(for: leagueColorName))
 
-                        VStack(alignment: .trailing, spacing: 1) {
+                        VStack(alignment: .leading, spacing: 1) {
                             HStack(spacing: 4) {
                                 Text(ordinal(rank))
                                     .font(.caption.weight(.semibold))
@@ -93,6 +79,22 @@ struct TabToolbar: ViewModifier {
                                 .font(.caption2)
                                 .foregroundStyle(leaguePnL >= 0 ? Color.green : theme.error)
                         }
+                    }
+                }
+                ToolbarItem(placement: .principal) {
+                    Image("UNIT_Logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 100)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 10) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "nairasign.circle.fill")
+                            Text("\(userUnits)").fontWeight(.semibold)
+                        }
+                        .font(.subheadline)
+                        .foregroundStyle(theme.primaryText(colorScheme))
 
                         Image(systemName: profileSymbol)
                             .font(.title2)
