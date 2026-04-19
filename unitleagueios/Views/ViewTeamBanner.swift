@@ -7,66 +7,10 @@ struct ViewTeamBanner: View {
     let league: League
     var showChevron: Bool = false
 
-    var teamColor: Color {
-        switch team.color ?? "" {
-        case "Blue":         return Color(red: 0.10, green: 0.25, blue: 0.80)
-        case "Red":          return .red
-        case "Green":        return .green
-        case "Yellow":       return .yellow
-        case "Black":        return Color(white: 0.15)
-        case "Purple":       return .purple
-        case "Orange":       return .orange
-        case "Brown":        return Color(red: 0.55, green: 0.27, blue: 0.07)
-        case "White":        return .white
-        case "Gray":         return .gray
-        case "Gold":         return Color(red: 1.0, green: 0.75, blue: 0.0)
-        case "Navy":         return Color(red: 0.0, green: 0.0, blue: 0.50)
-        default:             return .gray
-        }
-    }
-
-    var sportIcon: String {
-        switch league.id {
-        case 1:  return "basketball"
-        case 2:  return "american.football.professional"
-        case 3:  return "hockey.puck"
-        case 4:  return "baseball"
-        case 5:  return "american.football"
-        case 6:  return "basketball.fill"
-        default: return "sportscourt"
-        }
-    }
-
-    var categoryIcon: String {
-        switch team.category ?? "" {
-        case "Person":    return "person"
-        case "Animal":    return "pawprint"
-        case "Bird":      return "bird"
-        case "Cat":       return "cat"
-        case "Dog":       return "dog"
-        case "Color":     return "paintpalette"
-        case "Imaginary": return "person.fill.questionmark"
-        default:          return "questionmark"
-        }
-    }
-    
-    var regionIcon: String {
-        switch team.region ?? "" {
-        case "East":        return "arrowshape.right.fill"
-        case "West":        return "arrowshape.left.fill"
-        case "South":       return "arrowshape.down.fill"
-        case "Midwest":     return "arrowshape.up.fill"
-        default:            return "questionmark"
-        }
-    }
-
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             LinearGradient(
-                    // Dark Mode
-//                colors: [Color.secondary, teamColor.opacity(0.97)],
-                    // Light Mode
-                colors: [teamColor.opacity(0.35), Color.secondary],
+                colors: [team.teamColor.opacity(0.35), Color.secondary],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -74,7 +18,7 @@ struct ViewTeamBanner: View {
             .frame(height: 80)
 
             HStack(alignment: .center, spacing: 14) {
-                Image(systemName: sportIcon)
+                Image(systemName: league.sportIcon)
                     .font(.system(size: 28, weight: .semibold))
                     .foregroundStyle(theme.primaryText(colorScheme))
                     .frame(width: 48, height: 48)
@@ -91,7 +35,7 @@ struct ViewTeamBanner: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    TeamMetaRow(team: team, categoryIcon: categoryIcon, regionIcon: regionIcon)
+                    TeamMetaRow(team: team)
                 }
 
                 Spacer()
@@ -113,23 +57,21 @@ struct ViewTeamBanner: View {
 
 struct TeamMetaRow: View {
     let team: Team
-    let categoryIcon: String
-    let regionIcon: String
 
     var body: some View {
         let confDiv = [team.conf, team.div].compactMap { $0 }.joined(separator: " · ")
-            HStack(spacing: 6) {
-                if !confDiv.isEmpty {
-                    Text(confDiv)
-                }
-                if team.region != nil {
-                    if !confDiv.isEmpty { Text("·").foregroundStyle(.tertiary) }
-                    Image(systemName: regionIcon)
-                }
-                if let mascot = team.mascot {
-                        Label(mascot, systemImage: categoryIcon)
-                    }
+        HStack(spacing: 6) {
+            if !confDiv.isEmpty {
+                Text(confDiv)
             }
+            if team.region != nil {
+                if !confDiv.isEmpty { Text("·").foregroundStyle(.tertiary) }
+                Image(systemName: team.regionIcon)
+            }
+            if let mascot = team.mascot {
+                Label(mascot, systemImage: team.categoryIcon)
+            }
+        }
         .font(.caption)
         .foregroundStyle(.secondary)
     }

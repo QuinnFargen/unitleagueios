@@ -27,4 +27,6 @@ struct Game: Codable, Identifiable {
         case awayTeamId = "away_team_id"
         case wonTeamId  = "won_team_id"
     }
+
+    var sportIcon: String { League.sportIcon(for: leagueId) }
 }
