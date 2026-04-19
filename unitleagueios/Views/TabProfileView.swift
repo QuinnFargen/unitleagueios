@@ -17,14 +17,17 @@ struct TabProfileView: View {
     }
 
     var body: some View {
-        ZStack {
-            theme.appBackground(colorScheme).ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                theme.appBackground(colorScheme).ignoresSafeArea()
 
-            if appleUserName.isEmpty {
-                signInView
-            } else {
-                profileView
+                if appleUserName.isEmpty {
+                    signInView
+                } else {
+                    profileView
+                }
             }
+            .tabToolbar()
         }
     }
 

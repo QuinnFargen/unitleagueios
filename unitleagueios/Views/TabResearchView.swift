@@ -47,8 +47,7 @@ struct TabResearchView: View {
                     }
                 }
             }
-            .navigationTitle("Unit League")
-            .navigationBarTitleDisplayMode(.inline)
+            .tabToolbar()
         }
         .task { fetchLeagues() }
     }
