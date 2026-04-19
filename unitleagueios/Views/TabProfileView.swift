@@ -189,11 +189,11 @@ struct TabProfileView: View {
 
 enum ProfileOption {
     static let symbols = [
-        "person.circle.fill",
-        "star.circle.fill",
-        "bolt.circle.fill",
-        "flame.circle.fill",
-        "crown.fill"
+        "figure.american.football.circle.fill",
+        "figure.basketball.circle.fill",
+        "figure.baseball.circle.fill",
+        "figure.hockey.circle.fill",
+        "figure.pickleball.circle.fill"
     ]
 
     static let colorNames = ["green", "blue", "orange", "purple", "red"]
@@ -204,7 +204,7 @@ enum ProfileOption {
         case "blue":   return .blue
         case "orange": return .orange
         case "purple": return .purple
-        case "red":    return .red
+        case "red":   return .red
         default:       return .green
         }
     }

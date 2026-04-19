@@ -68,17 +68,24 @@ struct TabGamesView: View {
                         Button {
                             selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
                         } label: {
-                            Image(systemName: "\(prevDayNumber).circle")
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(.white)
+                            HStack{
+                                Image(systemName: "chevron.left")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                Image(systemName: "\(prevDayNumber).calendar")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.white)
+                            }
                         }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(Capsule())
 
                         Button {
                             showDatePicker = true
                         } label: {
                             HStack(spacing: 4) {
-                                Image(systemName: "calendar")
-                                    .font(.subheadline.weight(.semibold))
                                 Text(displayFormatter.string(from: selectedDate))
                                     .font(.subheadline.weight(.semibold))
                             }
@@ -91,22 +98,29 @@ struct TabGamesView: View {
                         Button {
                             selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
                         } label: {
-                            Image(systemName: "\(nextDayNumber).circle")
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(.white)
-                        }
-
-                        Button {
-                            selectedDate = .now
-                        } label: {
-                            Image(systemName: "\(todayDayNumber).circle.fill")
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(.white)
+                            HStack{
+                                Image(systemName: "\(nextDayNumber).calendar")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                Image(systemName: "chevron.right")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.white)
+                            }
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(Color.white.opacity(0.1))
                         .clipShape(Capsule())
+                        
+                        Button("Today") {
+                                selectedDate = .now
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Capsule())
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 10)
