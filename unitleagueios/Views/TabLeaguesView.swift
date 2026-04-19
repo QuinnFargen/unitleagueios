@@ -4,8 +4,6 @@ struct TabLeaguesView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("userLeagues") private var userLeaguesData: Data = Data()
-    @AppStorage("leagueSymbol") private var leagueSymbol: String = LeagueOption.symbols[0]
-    @AppStorage("leagueColorName") private var leagueColorName: String = LeagueOption.colorNames[0]
     @State private var showingJoin = false
     @State private var showingCreate = false
     @State private var leagues: [League] = []
@@ -23,59 +21,13 @@ struct TabLeaguesView: View {
 
                 ScrollView {
                     VStack(spacing: 24) {
-                        LeagueActionButton(title: "Join League", icon: "person.badge.plus") {
-                            showingJoin = true
-                        }
-
-                        LeagueActionButton(title: "Create League", icon: "plus.circle") {
-                            showingCreate = true
-                        }
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("League Badge")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 32)
-
-                            HStack(spacing: 14) {
-                                ForEach(LeagueOption.symbols, id: \.self) { symbol in
-                                    Button { leagueSymbol = symbol } label: {
-                                        Image(systemName: symbol)
-                                            .font(.title2)
-                                            .foregroundStyle(leagueSymbol == symbol ? theme.primaryText(colorScheme) : .secondary)
-                                            .frame(width: 52, height: 52)
-                                            .background(leagueSymbol == symbol ? theme.cardBackgroundProminent(colorScheme) : Color.clear)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(
-                                                        leagueSymbol == symbol ? theme.primaryText(colorScheme).opacity(0.4) : Color.clear,
-                                                        lineWidth: 1.5
-                                                    )
-                                            )
-                                    }
-                                }
+                        HStack(spacing: 12) {
+                            LeagueActionButton(title: "Join", icon: "person.badge.plus", tint: .green) {
+                                showingJoin = true
                             }
-                            .padding(.horizontal, 20)
-
-                            HStack(spacing: 16) {
-                                ForEach(LeagueOption.colorNames, id: \.self) { name in
-                                    Button { leagueColorName = name } label: {
-                                        Circle()
-                                            .fill(ProfileOption.color(for: name))
-                                            .frame(width: 40, height: 40)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(theme.primaryText(colorScheme), lineWidth: leagueColorName == name ? 2.5 : 0)
-                                            )
-                                            .shadow(
-                                                color: ProfileOption.color(for: name).opacity(leagueColorName == name ? 0.6 : 0),
-                                                radius: 6
-                                            )
-                                    }
-                                }
+                            LeagueActionButton(title: "Create", icon: "plus.circle", tint: theme.error) {
+                                showingCreate = true
                             }
-                            .padding(.horizontal, 32)
                         }
 
                         if !userLeagues.isEmpty {
@@ -86,7 +38,10 @@ struct TabLeaguesView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                 ForEach(userLeagues) { league in
-                                    UserLeagueCard(userLeague: league)
+                                    NavigationLink(destination: LeagueDetailView(userLeague: league)) {
+                                        UserLeagueCard(userLeague: league)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }
@@ -124,30 +79,55 @@ struct TabLeaguesView: View {
     }
 }
 
+// MARK: - UserLeague model
+
 struct UserLeague: Codable, Identifiable {
     let id: UUID
     let leagueId: Int
     let abbr: String
     let sport: String
     let customName: String
+    let colorName: String
+
+    init(id: UUID, leagueId: Int, abbr: String, sport: String, customName: String, colorName: String) {
+        self.id = id
+        self.leagueId = leagueId
+        self.abbr = abbr
+        self.sport = sport
+        self.customName = customName
+        self.colorName = colorName
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id         = try c.decode(UUID.self,   forKey: .id)
+        leagueId   = try c.decode(Int.self,    forKey: .leagueId)
+        abbr       = try c.decode(String.self, forKey: .abbr)
+        sport      = try c.decode(String.self, forKey: .sport)
+        customName = try c.decode(String.self, forKey: .customName)
+        colorName  = (try? c.decode(String.self, forKey: .colorName)) ?? LeagueOption.colorNames[0]
+    }
 }
 
+// MARK: - Sub-views
+
 private struct LeagueActionButton: View {
-    @EnvironmentObject private var theme: AppTheme
     let title: String
     let icon: String
+    let tint: Color
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.title3)
+                .font(.subheadline)
                 .fontWeight(.semibold)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 18)
-                .background(theme.accent)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.vertical, 14)
+                .background(tint.opacity(0.15))
+                .foregroundStyle(tint)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint.opacity(0.35), lineWidth: 1))
         }
     }
 }
@@ -161,7 +141,7 @@ private struct UserLeagueCard: View {
         HStack(spacing: 16) {
             Image(systemName: League.sportIcon(for: userLeague.leagueId))
                 .font(.title2)
-                .foregroundStyle(theme.primaryText(colorScheme))
+                .foregroundStyle(ProfileOption.color(for: userLeague.colorName))
                 .frame(width: 44, height: 44)
                 .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -176,6 +156,10 @@ private struct UserLeagueCard: View {
             }
 
             Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
         .padding()
         .background(theme.cardBackground(colorScheme))
@@ -194,6 +178,9 @@ private struct LeagueFormSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedLeagueId: Int?
     @State private var leagueName = ""
+    @State private var selectedColorName: String = LeagueOption.colorNames[0]
+    @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
+    @AppStorage("leagueColorName") private var leagueColorName: String = LeagueOption.colorNames[0]
 
     private var selectedLeague: League? {
         leagues.first { $0.id == selectedLeagueId }
@@ -227,6 +214,32 @@ private struct LeagueFormSheet: View {
                     Section("League Name") {
                         TextField("Enter a name", text: $leagueName)
                     }
+
+                    Section("Your Color") {
+                        HStack(spacing: 16) {
+                            ForEach(LeagueOption.colorNames, id: \.self) { name in
+                                Button {
+                                    selectedColorName = name
+                                } label: {
+                                    Circle()
+                                        .fill(ProfileOption.color(for: name))
+                                        .frame(width: 36, height: 36)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(theme.primaryText(colorScheme),
+                                                        lineWidth: selectedColorName == name ? 2.5 : 0)
+                                        )
+                                        .shadow(
+                                            color: ProfileOption.color(for: name)
+                                                .opacity(selectedColorName == name ? 0.6 : 0),
+                                            radius: 6
+                                        )
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .listRowBackground(Color.clear)
+                    }
                 }
                 .scrollContentBackground(.hidden)
             }
@@ -236,12 +249,15 @@ private struct LeagueFormSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(confirmLabel) {
                         if let league = selectedLeague {
+                            leagueSymbol    = League.sportIcon(for: league.id)
+                            leagueColorName = selectedColorName
                             onConfirm(UserLeague(
                                 id: UUID(),
                                 leagueId: league.id,
                                 abbr: league.abbr,
                                 sport: league.sport,
-                                customName: leagueName.trimmingCharacters(in: .whitespaces)
+                                customName: leagueName.trimmingCharacters(in: .whitespaces),
+                                colorName: selectedColorName
                             ))
                         }
                         dismiss()
