@@ -2,6 +2,8 @@ import SwiftUI
 import AuthenticationServices
 
 struct TabProfileView: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("appleUserName") private var appleUserName: String = ""
     @AppStorage("customUserName") private var customUserName: String = ""
     @AppStorage("profileSymbol") private var profileSymbol: String = ProfileOption.symbols[0]
@@ -16,7 +18,7 @@ struct TabProfileView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            theme.appBackground(colorScheme).ignoresSafeArea()
 
             if appleUserName.isEmpty {
                 signInView
@@ -30,7 +32,7 @@ struct TabProfileView: View {
         VStack(spacing: 40) {
             Text("Unit League")
                 .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(theme.primaryText(colorScheme))
 
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName]
@@ -57,7 +59,7 @@ struct TabProfileView: View {
             if let msg = authError {
                 Text(msg)
                     .font(.footnote)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(theme.error)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
@@ -77,7 +79,7 @@ struct TabProfileView: View {
                         TextField("Username", text: $usernameInput)
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(theme.primaryText(colorScheme))
                             .multilineTextAlignment(.center)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
@@ -87,7 +89,7 @@ struct TabProfileView: View {
                             if !trimmed.isEmpty { customUserName = trimmed }
                             isEditingUsername = false
                         }
-                        .tint(.green)
+                        .tint(theme.accent)
                     }
                     .padding(.horizontal, 40)
                 } else {
@@ -99,7 +101,7 @@ struct TabProfileView: View {
                             Text(displayName)
                                 .font(.title)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(theme.primaryText(colorScheme))
                             Image(systemName: "pencil")
                                 .font(.body)
                                 .foregroundStyle(.secondary)
@@ -121,14 +123,14 @@ struct TabProfileView: View {
                             } label: {
                                 Image(systemName: symbol)
                                     .font(.title2)
-                                    .foregroundStyle(profileSymbol == symbol ? .white : .secondary)
+                                    .foregroundStyle(profileSymbol == symbol ? theme.primaryText(colorScheme) : .secondary)
                                     .frame(width: 52, height: 52)
-                                    .background(profileSymbol == symbol ? Color.white.opacity(0.15) : Color.clear)
+                                    .background(profileSymbol == symbol ? theme.cardBackgroundProminent(colorScheme) : Color.clear)
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(
-                                                profileSymbol == symbol ? Color.white.opacity(0.4) : Color.clear,
+                                                profileSymbol == symbol ? theme.primaryText(colorScheme).opacity(0.4) : Color.clear,
                                                 lineWidth: 1.5
                                             )
                                     )
@@ -139,7 +141,7 @@ struct TabProfileView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Profile Color")
+                    Text("Avatar Color")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 32)
@@ -154,12 +156,45 @@ struct TabProfileView: View {
                                     .frame(width: 40, height: 40)
                                     .overlay(
                                         Circle()
-                                            .stroke(Color.white, lineWidth: profileColorName == name ? 2.5 : 0)
+                                            .stroke(theme.primaryText(colorScheme), lineWidth: profileColorName == name ? 2.5 : 0)
                                     )
                                     .shadow(
                                         color: ProfileOption.color(for: name).opacity(profileColorName == name ? 0.6 : 0),
                                         radius: 6
                                     )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 32)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Accent Color")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 32)
+
+                    HStack(spacing: 16) {
+                        ForEach(AccentOption.allCases) { option in
+                            Button {
+                                theme.accentOption = option
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Circle()
+                                        .fill(option.color)
+                                        .frame(width: 40, height: 40)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(theme.primaryText(colorScheme), lineWidth: theme.accentOption == option ? 2.5 : 0)
+                                        )
+                                        .shadow(
+                                            color: option.color.opacity(theme.accentOption == option ? 0.6 : 0),
+                                            radius: 6
+                                        )
+                                    Text(option.label)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
@@ -173,10 +208,10 @@ struct TabProfileView: View {
                     Text("Sign Out")
                         .font(.body)
                         .fontWeight(.medium)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(theme.error)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color.red.opacity(0.12))
+                        .background(theme.error.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .padding(.horizontal, 32)
@@ -212,4 +247,5 @@ enum ProfileOption {
 
 #Preview {
     TabProfileView()
+        .environmentObject(AppTheme())
 }

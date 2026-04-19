@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ViewSched: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let team: Team
     let league: League
 
@@ -25,7 +27,7 @@ struct ViewSched: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            theme.appBackground(colorScheme).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 ViewTeamBanner(team: team, league: league)
@@ -33,21 +35,21 @@ struct ViewSched: View {
                     .padding(.top, 8)
 
                 Divider()
-                    .background(Color.white.opacity(0.1))
+                    .background(theme.divider(colorScheme))
                     .padding(.top, 8)
 
                 // Content
                 Group {
                     if isLoading {
                         Spacer()
-                        ProgressView().tint(.white)
+                        ProgressView()
                         Spacer()
                     } else if let error = errorMessage {
                         Spacer()
                         VStack(spacing: 12) {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(.largeTitle)
-                                .foregroundStyle(.red)
+                                .foregroundStyle(theme.error)
                             Text(error)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -84,7 +86,6 @@ struct ViewSched: View {
         }
         .navigationTitle(team.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -104,9 +105,9 @@ struct ViewSched: View {
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 5)
-                        .background(Color.white.opacity(0.15))
+                        .background(theme.cardBackgroundProminent(colorScheme))
                         .clipShape(Capsule())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.primaryText(colorScheme))
                 }
             }
         }
@@ -132,6 +133,8 @@ struct ViewSched: View {
 // MARK: - SchedCard
 
 private struct SchedCard: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let entry: Sched
     var isHighlighted: Bool = false
 
@@ -164,10 +167,10 @@ private struct SchedCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(matchup)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.primaryText(colorScheme))
                 Text(formattedDate)
                     .font(.caption)
-                    .foregroundStyle(.background)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -176,11 +179,11 @@ private struct SchedCard: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("\(teamScore) – \(oppScore)")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.primaryText(colorScheme))
                     if let won = entry.won {
                         Text(won ? "W · FINAL" : "L · FINAL")
                             .font(.caption2)
-                            .foregroundStyle(won ? .green : .red)
+                            .foregroundStyle(won ? theme.win : theme.loss)
                     }
                 }
             } else {
@@ -190,11 +193,11 @@ private struct SchedCard: View {
             }
         }
         .padding()
-        .background(Color.white.opacity(0.07))
+        .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+                .stroke(theme.primaryText(colorScheme).opacity(0.6), lineWidth: 1.5)
                 .opacity(isHighlighted ? 1 : 0)
         )
     }
@@ -204,4 +207,5 @@ private struct SchedCard: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(AppTheme())
 }

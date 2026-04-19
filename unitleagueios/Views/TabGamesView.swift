@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct TabGamesView: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedDate: Date = .now
     @State private var selectedLeagueId: Int? = nil
     @State private var selectedTeamId: Int? = nil
@@ -60,7 +62,7 @@ struct TabGamesView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                theme.appBackground(colorScheme).ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     // Date navigation row
@@ -71,15 +73,15 @@ struct TabGamesView: View {
                             HStack{
                                 Image(systemName: "chevron.left")
                                     .font(.title3.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(theme.primaryText(colorScheme))
                                 Image(systemName: "\(prevDayNumber).calendar")
                                     .font(.title3.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(theme.primaryText(colorScheme))
                             }
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.1))
+                        .background(theme.cardBackground(colorScheme))
                         .clipShape(Capsule())
 
                         Button {
@@ -89,7 +91,7 @@ struct TabGamesView: View {
                                 Text(displayFormatter.string(from: selectedDate))
                                     .font(.subheadline.weight(.semibold))
                             }
-                            .foregroundStyle(.white)
+                            .foregroundStyle(theme.primaryText(colorScheme))
                         }
                         .sheet(isPresented: $showDatePicker) {
                             DatePickerSheet(selectedDate: $selectedDate)
@@ -101,25 +103,25 @@ struct TabGamesView: View {
                             HStack{
                                 Image(systemName: "\(nextDayNumber).calendar")
                                     .font(.title3.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(theme.primaryText(colorScheme))
                                 Image(systemName: "chevron.right")
                                     .font(.title3.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(theme.primaryText(colorScheme))
                             }
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.1))
+                        .background(theme.cardBackground(colorScheme))
                         .clipShape(Capsule())
-                        
+
                         Button("Today") {
                                 selectedDate = .now
                             }
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(theme.primaryText(colorScheme))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.white.opacity(0.1))
+                            .background(theme.cardBackground(colorScheme))
                             .clipShape(Capsule())
                     }
                     .padding(.horizontal)
@@ -162,20 +164,20 @@ struct TabGamesView: View {
                     }
 
                     Divider()
-                        .background(Color.white.opacity(0.1))
+                        .background(theme.divider(colorScheme))
 
                     // Content
                     Group {
                         if isLoading {
                             Spacer()
-                            ProgressView().tint(.white)
+                            ProgressView()
                             Spacer()
                         } else if let error = errorMessage {
                             Spacer()
                             VStack(spacing: 12) {
                                 Image(systemName: "exclamationmark.triangle")
                                     .font(.largeTitle)
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(theme.error)
                                 Text(error)
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.center)
@@ -219,7 +221,6 @@ struct TabGamesView: View {
             }
             .navigationTitle("Games")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .task(id: fetchKey) { await fetchGames() }
         .onChange(of: selectedLeagueId) { _, leagueId in
@@ -258,6 +259,8 @@ struct TabGamesView: View {
 // MARK: - FilterChip
 
 struct FilterChip: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let label: String
     let isSelected: Bool
     let action: () -> Void
@@ -266,10 +269,10 @@ struct FilterChip: View {
         Button(action: action) {
             Text(label)
                 .font(.subheadline.weight(isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? .black : .white)
+                .foregroundStyle(isSelected ? theme.chipSelectedFG(colorScheme) : theme.primaryText(colorScheme))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 6)
-                .background(isSelected ? Color.white : Color.white.opacity(0.1))
+                .background(isSelected ? theme.chipSelected(colorScheme) : theme.chipUnselected(colorScheme))
                 .clipShape(Capsule())
         }
     }
@@ -278,6 +281,8 @@ struct FilterChip: View {
 // MARK: - GameCard
 
 private struct GameCard: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let game: Game
 
     private let timeInputFormatter: DateFormatter = {
@@ -316,9 +321,9 @@ private struct GameCard: View {
         HStack {
             Image(systemName: sportIcon)
                 .font(.title2)
-                .foregroundStyle(.white)
+                .foregroundStyle(theme.primaryText(colorScheme))
                 .frame(width: 36, height: 36)
-                .background(Color.white.opacity(0.1))
+                .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
@@ -331,7 +336,7 @@ private struct GameCard: View {
                         .fontWeight(game.winner == game.home ? .bold : .regular)
                 }
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(theme.primaryText(colorScheme))
             }
 
             Spacer()
@@ -340,7 +345,7 @@ private struct GameCard: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("\(ascore) – \(hscore)")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.primaryText(colorScheme))
                     Text("FINAL")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -356,7 +361,7 @@ private struct GameCard: View {
             }
         }
         .padding()
-        .background(Color.white.opacity(0.07))
+        .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
@@ -364,30 +369,29 @@ private struct GameCard: View {
 // MARK: - DatePickerSheet
 
 private struct DatePickerSheet: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var selectedDate: Date
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                theme.appBackground(colorScheme).ignoresSafeArea()
                 DatePicker(
                     "",
                     selection: $selectedDate,
                     displayedComponents: .date
                 )
                 .datePickerStyle(.graphical)
-                .tint(.white)
-                .colorScheme(.dark)
+                .tint(theme.accent)
                 .padding(.horizontal)
             }
             .navigationTitle("Select Date")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
-                        .foregroundStyle(.white)
                 }
             }
         }
@@ -396,4 +400,5 @@ private struct DatePickerSheet: View {
 
 #Preview {
     TabGamesView()
+        .environmentObject(AppTheme())
 }

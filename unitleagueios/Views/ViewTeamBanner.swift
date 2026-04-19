@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ViewTeamBanner: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let team: Team
     let league: League
     var showChevron: Bool = false
@@ -61,20 +63,20 @@ struct ViewTeamBanner: View {
             HStack(alignment: .center, spacing: 14) {
                 Image(systemName: sportIcon)
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.primaryText(colorScheme))
                     .frame(width: 48, height: 48)
-                    .background(Color.white.opacity(0.12))
+                    .background(theme.cardBackgroundProminent(colorScheme))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(team.abbr)
                             .font(.title2).bold()
-                            .foregroundStyle(.white)
+                            .foregroundStyle(theme.primaryText(colorScheme))
                         if let mascot = team.mascot {
                             Label(mascot, systemImage: categoryIcon)
                                 .font(.caption)
-                                .foregroundStyle(.background)
+                                .foregroundStyle(.secondary)
                         }
                     }
 
@@ -113,12 +115,8 @@ struct TeamMetaRow: View {
                 if !confDiv.isEmpty { Text("·").foregroundStyle(.tertiary) }
                 Label(region, systemImage: "location.fill")
             }
-//            if team.category != nil {
-//                if team.conf != nil || team.region != nil { Text("·").foregroundStyle(.tertiary) }
-//                Image(systemName: categoryIcon)
-//            }
         }
         .font(.caption)
-        .foregroundStyle(.background)
+        .foregroundStyle(.secondary)
     }
 }
