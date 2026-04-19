@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct TabResearchView: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     @State private var leagues: [League] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -10,17 +12,16 @@ struct TabResearchView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                theme.appBackground(colorScheme).ignoresSafeArea()
 
                 Group {
                     if isLoading {
                         ProgressView()
-                            .tint(.white)
                     } else if let error = errorMessage {
                         VStack(spacing: 12) {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(.largeTitle)
-                                .foregroundStyle(.red)
+                                .foregroundStyle(theme.error)
                             Text(error)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -48,7 +49,6 @@ struct TabResearchView: View {
             }
             .navigationTitle("Unit League")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .task { fetchLeagues() }
     }
@@ -68,6 +68,8 @@ struct TabResearchView: View {
 }
 
 struct LeagueCard: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let league: League
 
     var sportIcon: String {
@@ -86,15 +88,15 @@ struct LeagueCard: View {
         HStack(spacing: 16) {
             Image(systemName: sportIcon)
                 .font(.title2)
-                .foregroundStyle(.white)
+                .foregroundStyle(theme.primaryText(colorScheme))
                 .frame(width: 44, height: 44)
-                .background(Color.white.opacity(0.1))
+                .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(league.abbr)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.primaryText(colorScheme))
                 Text(league.name)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -107,11 +109,12 @@ struct LeagueCard: View {
                 .foregroundStyle(.tertiary)
         }
         .padding()
-        .background(Color.white.opacity(0.07))
+        .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
 #Preview {
     TabResearchView()
+        .environmentObject(AppTheme())
 }

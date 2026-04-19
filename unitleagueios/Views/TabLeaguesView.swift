@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct TabLeaguesView: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("userLeagues") private var userLeaguesData: Data = Data()
     @State private var showingJoin = false
     @State private var showingCreate = false
@@ -14,22 +16,22 @@ struct TabLeaguesView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            theme.appBackground(colorScheme).ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 24) {
                     Text("Leagues")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.primaryText(colorScheme))
 
                     Spacer().frame(height: 8)
 
-                    LeagueActionButton(title: "Join League", icon: "person.badge.plus", color: .green) {
+                    LeagueActionButton(title: "Join League", icon: "person.badge.plus") {
                         showingJoin = true
                     }
 
-                    LeagueActionButton(title: "Create League", icon: "plus.circle", color: .blue) {
+                    LeagueActionButton(title: "Create League", icon: "plus.circle") {
                         showingCreate = true
                     }
 
@@ -86,9 +88,9 @@ struct UserLeague: Codable, Identifiable {
 }
 
 private struct LeagueActionButton: View {
+    @EnvironmentObject private var theme: AppTheme
     let title: String
     let icon: String
-    let color: Color
     let action: () -> Void
 
     var body: some View {
@@ -98,7 +100,7 @@ private struct LeagueActionButton: View {
                 .fontWeight(.semibold)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
-                .background(color)
+                .background(theme.accent)
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
         }
@@ -106,21 +108,23 @@ private struct LeagueActionButton: View {
 }
 
 private struct UserLeagueCard: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let userLeague: UserLeague
 
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: sportIcon(for: userLeague.leagueId))
                 .font(.title2)
-                .foregroundStyle(.white)
+                .foregroundStyle(theme.primaryText(colorScheme))
                 .frame(width: 44, height: 44)
-                .background(Color.white.opacity(0.1))
+                .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(userLeague.abbr)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.primaryText(colorScheme))
                 Text(userLeague.customName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -129,12 +133,14 @@ private struct UserLeagueCard: View {
             Spacer()
         }
         .padding()
-        .background(Color.white.opacity(0.07))
+        .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
 private struct LeagueFormSheet: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let title: String
     let confirmLabel: String
     let leagues: [League]
@@ -151,13 +157,13 @@ private struct LeagueFormSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                theme.appBackground(colorScheme).ignoresSafeArea()
 
                 Form {
                     Section("Select League") {
                         if leagues.isEmpty {
                             HStack(spacing: 10) {
-                                ProgressView().tint(.white)
+                                ProgressView()
                                 Text("Loading leagues...")
                                     .foregroundStyle(.secondary)
                             }
@@ -196,7 +202,7 @@ private struct LeagueFormSheet: View {
                         dismiss()
                     }
                     .disabled(selectedLeagueId == nil || leagueName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .tint(.green)
+                    .tint(theme.accent)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -207,6 +213,8 @@ private struct LeagueFormSheet: View {
 }
 
 private struct LeagueOptionRow: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let league: League
     let isSelected: Bool
     let action: () -> Void
@@ -216,15 +224,15 @@ private struct LeagueOptionRow: View {
             HStack(spacing: 14) {
                 Image(systemName: sportIcon(for: league.id))
                     .font(.title3)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.primaryText(colorScheme))
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.1))
+                    .background(theme.cardBackground(colorScheme))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(league.abbr)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.primaryText(colorScheme))
                     Text(league.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -234,7 +242,7 @@ private struct LeagueOptionRow: View {
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(theme.accent)
                 }
             }
         }
@@ -256,4 +264,5 @@ private func sportIcon(for leagueId: Int) -> String {
 
 #Preview {
     TabLeaguesView()
+        .environmentObject(AppTheme())
 }

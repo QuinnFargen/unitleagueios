@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ViewTeamList: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     let league: League
 
     @State private var teams: [Team] = []
@@ -31,15 +33,15 @@ struct ViewTeamList: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            theme.appBackground(colorScheme).ignoresSafeArea()
 
             if isLoading {
-                ProgressView().tint(.white)
+                ProgressView()
             } else if let error = errorMessage {
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.largeTitle)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(theme.error)
                     Text(error)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -94,7 +96,7 @@ struct ViewTeamList: View {
 
                     if !confs.isEmpty {
                         Divider()
-                            .background(Color.white.opacity(0.1))
+                            .background(theme.divider(colorScheme))
                     }
 
                     ScrollView {
@@ -117,7 +119,6 @@ struct ViewTeamList: View {
         }
         .navigationTitle(league.abbr)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
         .task { await fetchTeams() }
     }
 
@@ -132,4 +133,3 @@ struct ViewTeamList: View {
         isLoading = false
     }
 }
-

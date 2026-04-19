@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTab = 4
 
     var body: some View {
@@ -35,16 +37,18 @@ struct MainTabView: View {
                 }
                 .tag(4)
         }
-        .tint(.green)
+        .tint(theme.accent)
     }
 }
 
 private struct PlaceholderView: View {
     let title: String
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            theme.appBackground(colorScheme).ignoresSafeArea()
             Text(title)
                 .font(.title2)
                 .foregroundStyle(.secondary)
