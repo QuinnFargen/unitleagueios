@@ -305,21 +305,9 @@ private struct GameCard: View {
         return timeOutputFormatter.string(from: date)
     }
 
-    private var sportIcon: String {
-        switch game.leagueId {
-        case 1:  return "basketball"
-        case 2:  return "american.football.professional"
-        case 3:  return "hockey.puck"
-        case 4:  return "baseball"
-        case 5:  return "american.football"
-        case 6:  return "basketball.fill"
-        default: return "sportscourt"
-        }
-    }
-
     var body: some View {
         HStack {
-            Image(systemName: sportIcon)
+            Image(systemName: game.sportIcon)
                 .font(.title2)
                 .foregroundStyle(theme.primaryText(colorScheme))
                 .frame(width: 36, height: 36)
