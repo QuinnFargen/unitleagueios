@@ -49,13 +49,26 @@ struct ViewTeamBanner: View {
         default:          return "questionmark"
         }
     }
+    
+    var regionIcon: String {
+        switch team.region ?? "" {
+        case "East":        return "arrowshape.right.fill"
+        case "West":        return "arrowshape.left.fill"
+        case "South":       return "arrowshape.down.fill"
+        case "Midwest":     return "arrowshape.up.fill"
+        default:            return "questionmark"
+        }
+    }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             LinearGradient(
-                colors: [Color.primary, teamColor.opacity(0.20)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                    // Dark Mode
+//                colors: [Color.secondary, teamColor.opacity(0.97)],
+                    // Light Mode
+                colors: [teamColor.opacity(0.35), Color.secondary],
+                startPoint: .top,
+                endPoint: .bottom
             )
             .frame(maxWidth: .infinity)
             .frame(height: 80)
@@ -73,14 +86,12 @@ struct ViewTeamBanner: View {
                         Text(team.abbr)
                             .font(.title2).bold()
                             .foregroundStyle(theme.primaryText(colorScheme))
-                        if let mascot = team.mascot {
-                            Label(mascot, systemImage: categoryIcon)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        Text(team.name)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
-                    TeamMetaRow(team: team, categoryIcon: categoryIcon)
+                    TeamMetaRow(team: team, categoryIcon: categoryIcon, regionIcon: regionIcon)
                 }
 
                 Spacer()
@@ -103,19 +114,22 @@ struct ViewTeamBanner: View {
 struct TeamMetaRow: View {
     let team: Team
     let categoryIcon: String
+    let regionIcon: String
 
     var body: some View {
         let confDiv = [team.conf, team.div].compactMap { $0 }.joined(separator: " · ")
-
-        HStack(spacing: 6) {
-            if !confDiv.isEmpty {
-                Text(confDiv)
+            HStack(spacing: 6) {
+                if !confDiv.isEmpty {
+                    Text(confDiv)
+                }
+                if team.region != nil {
+                    if !confDiv.isEmpty { Text("·").foregroundStyle(.tertiary) }
+                    Image(systemName: regionIcon)
+                }
+                if let mascot = team.mascot {
+                        Label(mascot, systemImage: categoryIcon)
+                    }
             }
-            if let region = team.region {
-                if !confDiv.isEmpty { Text("·").foregroundStyle(.tertiary) }
-                Label(region, systemImage: "location.fill")
-            }
-        }
         .font(.caption)
         .foregroundStyle(.secondary)
     }

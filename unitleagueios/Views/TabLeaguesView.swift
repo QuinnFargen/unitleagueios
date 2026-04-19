@@ -253,10 +253,10 @@ private struct LeagueOptionRow: View {
 private func sportIcon(for leagueId: Int) -> String {
     switch leagueId {
     case 1: return "basketball"
-    case 2: return "american.football.professional"
+    case 2: return "american.football"
     case 3: return "hockey.puck"
     case 4: return "baseball"
-    case 5: return "american.football"
+    case 5: return "american.football.fill"
     case 6: return "basketball.fill"
     default: return "sportscourt"
     }

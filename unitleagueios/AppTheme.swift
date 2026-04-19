@@ -27,7 +27,7 @@ enum AccentOption: String, CaseIterable, Identifiable {
 final class AppTheme: ObservableObject {
     var accentOption: AccentOption = AccentOption(rawValue: UserDefaults.standard.string(forKey: "accentOption") ?? "green") ?? .green {
         willSet { objectWillChange.send() }
-        didSet  { UserDefaults.standard.set(newValue.rawValue, forKey: "accentOption") }
+        didSet  { UserDefaults.standard.set(accentOption.rawValue, forKey: "accentOption") }
     }
 
     var accent: Color { accentOption.color }

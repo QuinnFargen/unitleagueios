@@ -11,31 +11,31 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Leagues", systemImage: "person.3")
                 }
-                .tag(0)
+//                .tag(0)
 
             TabResearchView()
                 .tabItem {
                     Label("Research", systemImage: "plus.forwardslash.minus")
                 }
-                .tag(1)
+//                .tag(1)
 
             TabGamesView()
                 .tabItem {
                     Label("Games", systemImage: "gamecontroller")
                 }
-                .tag(2)
+//                .tag(2)
 
             PlaceholderView(title: "Bets")
                 .tabItem {
                     Label("Bets", systemImage: "bitcoinsign.bank.building")
                 }
-                .tag(3)
+//                .tag(3)
 
             TabProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "figure.pickleball")
                 }
-                .tag(4)
+//                .tag(4)
         }
         .tint(theme.accent)
     }
@@ -58,4 +58,5 @@ private struct PlaceholderView: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(AppTheme())
 }
