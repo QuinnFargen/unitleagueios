@@ -231,7 +231,8 @@ enum ProfileOption {
         "figure.basketball.circle.fill",
         "figure.baseball.circle.fill",
         "figure.hockey.circle.fill",
-        "figure.pickleball.circle.fill"
+        "figure.pickleball.circle.fill",
+        "figure.equestrian.sports"
     ]
 
     static let colorNames = ["green", "blue", "orange", "purple", "red"]

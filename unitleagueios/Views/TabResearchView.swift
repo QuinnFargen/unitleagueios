@@ -30,19 +30,34 @@ struct TabResearchView: View {
                         }
                         .padding()
                     } else {
-                        ScrollView {
-                            LazyVStack(spacing: 12) {
-                                ForEach(leagues) { league in
-                                    NavigationLink {
-                                        ViewTeamList(league: league)
-                                    } label: {
-                                        LeagueCard(league: league)
+                        VStack{
+                            Text("Sports Leagues")
+                                .font(.title)
+                                .foregroundStyle(theme.primaryText(colorScheme))
+                            ScrollView {
+                                LazyVStack(spacing: 12) {
+                                    ForEach(leagues) { league in
+                                        NavigationLink {
+                                            ViewTeamList(league: league)
+                                        } label: {
+                                            LeagueCard(league: league)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
-                                    .buttonStyle(.plain)
                                 }
+                                .padding(.horizontal)
+                                .padding(.top, 8)
                             }
-                            .padding(.horizontal)
-                            .padding(.top, 8)
+                            Label("Team List", systemImage: "sportscourt")
+                            HStack{
+                                Spacer()
+                                Label("Rankings", systemImage: "list.number")
+                                Spacer()
+                                Label("Schedule", systemImage: "calendar")
+                                Spacer()
+                                Label("Bet History", systemImage: "books.vertical")
+                                Spacer()
+                            }
                         }
                     }
                 }
@@ -73,27 +88,51 @@ struct LeagueCard: View {
 
     var body: some View {
         HStack(spacing: 16) {
+            
             Image(systemName: league.sportIcon)
                 .font(.title2)
                 .foregroundStyle(theme.primaryText(colorScheme))
                 .frame(width: 44, height: 44)
                 .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-
+            
             VStack(alignment: .leading, spacing: 2) {
                 Text(league.abbr)
-                    .font(.headline)
+                    .font(.title)
                     .foregroundStyle(theme.primaryText(colorScheme))
-                Text(league.name)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                //                Text(league.name)
+                //                    .font(.subheadline)
+                //                    .foregroundStyle(.secondary)
             }
-
+            
             Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            
+            Image(systemName: "list.number")
+                .font(.title2)
+                .foregroundStyle(theme.primaryText(colorScheme))
+                .frame(width: 30, height: 30)
+                .background(theme.cardBackground(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            
+            Image(systemName: "calendar")
+                .font(.title2)
+                .foregroundStyle(theme.primaryText(colorScheme))
+                .frame(width: 30, height: 30)
+                .background(theme.cardBackground(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            
+            Image(systemName: "books.vertical")
+                .font(.title2)
+                .foregroundStyle(theme.primaryText(colorScheme))
+                .frame(width: 30, height: 30)
+                .background(theme.cardBackground(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            
+            //            Spacer()
+            //
+            //            Image(systemName: "chevron.right")
+            //                .font(.caption)
+            //                .foregroundStyle(.tertiary)
         }
         .padding()
         .background(theme.cardBackground(colorScheme))
