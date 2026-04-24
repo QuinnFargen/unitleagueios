@@ -10,9 +10,9 @@ struct ViewSched: View {
     @State private var schedule: [Sched] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var scrollTarget: Int? = nil
+    @State private var scrollTarget: String? = nil
 
-    private var lastFinalId: Int? {
+    private var lastFinalId: String? {
         schedule.first { $0.teamScore != nil && $0.oppScore != nil }?.id
     }
 

@@ -242,7 +242,7 @@ enum ProfileOption {
         case "blue":   return .blue
         case "orange": return .orange
         case "purple": return .purple
-        case "red":   return .red
+        case "red":    return .red
         default:       return .green
         }
     }

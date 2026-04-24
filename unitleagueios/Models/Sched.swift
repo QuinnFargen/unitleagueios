@@ -1,7 +1,7 @@
 import Foundation
 
 struct Sched: Codable, Identifiable {
-    let id: Int
+    let id: String
     let teamAbbr: String
     let oppAbbr: String?
     let gameDate: String?

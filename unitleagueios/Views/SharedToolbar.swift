@@ -42,19 +42,14 @@ struct TabToolbar: ViewModifier {
                 .font(.title2)
                 .foregroundStyle(ProfileOption.color(for: leagueColorName))
 
-            VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
                     Text(sampleRank)
-                        .font(.caption.weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(theme.primaryText(colorScheme))
                     Text(sampleDiff)
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(theme.error)
                 }
-                Text(samplePnL)
-                    .font(.caption2)
-                    .foregroundStyle(Color.green)
-            }
         }
         .fixedSize()
     }
