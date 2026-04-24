@@ -7,6 +7,10 @@ struct TabLeaguesView: View {
     @State private var showingJoin = false
     @State private var showingCreate = false
 
+    @AppStorage("customUserName")   private var customUserName: String   = ""
+    @AppStorage("appleUserName")    private var appleUserName: String    = ""
+    @AppStorage("profileColorName") private var profileColorName: String = ProfileOption.colorNames[0]
+
     private var userLeagues: [UserLeague] {
         (try? JSONDecoder().decode([UserLeague].self, from: userLeaguesData)) ?? []
     }
@@ -25,6 +29,18 @@ struct TabLeaguesView: View {
                             LeagueActionButton(title: "Create", icon: "plus.circle", tint: theme.error) {
                                 showingCreate = true
                             }
+                        }
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("My Career")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            CareerCard(
+                                displayName: customUserName.isEmpty ? (appleUserName.isEmpty ? "Me" : appleUserName) : customUserName,
+                                colorName: profileColorName
+                            )
                         }
 
                         if !userLeagues.isEmpty {
@@ -150,6 +166,38 @@ private struct UserLeagueCard: View {
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+        }
+        .padding()
+        .background(theme.cardBackground(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+private struct CareerCard: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
+    let displayName: String
+    let colorName: String
+
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "trophy.fill")
+                .font(.title2)
+                .foregroundStyle(ProfileOption.color(for: colorName))
+                .frame(width: 44, height: 44)
+                .background(theme.cardBackground(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayName)
+                    .font(.headline)
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                Text("My Career")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
         }
         .padding()
         .background(theme.cardBackground(colorScheme))
