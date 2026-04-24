@@ -48,16 +48,16 @@ struct TabResearchView: View {
                                 .padding(.horizontal)
                                 .padding(.top, 8)
                             }
-                            Label("Team List", systemImage: "sportscourt")
                             HStack{
+                                Label("Teams", systemImage: "sportscourt")
                                 Spacer()
-                                Label("Rankings", systemImage: "list.number")
+                                Label("Ranks", systemImage: "list.number")
                                 Spacer()
-                                Label("Schedule", systemImage: "calendar")
+                                Label("Sched", systemImage: "calendar")
                                 Spacer()
-                                Label("Bet History", systemImage: "books.vertical")
-                                Spacer()
+                                Label("Odds", systemImage: "books.vertical")
                             }
+                            Spacer()
                         }
                     }
                 }
