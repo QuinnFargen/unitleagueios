@@ -11,6 +11,7 @@ struct ViewLeagueDetail: View {
     @AppStorage("userUnits")        private var userUnits: Int           = 100
     @AppStorage("leagueSymbol")     private var leagueSymbol: String     = "sportscourt"
     @AppStorage("leagueColorName")  private var leagueColorName: String  = LeagueOption.colorNames[0]
+    @AppStorage("activeLeagueId")   private var activeLeagueId: Int      = -1
     @Environment(\.dismiss)         private var dismiss
 
     let userLeague: UserLeague
@@ -83,6 +84,7 @@ struct ViewLeagueDetail: View {
                         Button {
                             leagueSymbol    = League.sportIcon(for: userLeague.leagueId)
                             leagueColorName = userLeague.colorName
+                            activeLeagueId  = userLeague.leagueId
                         } label: {
                             Text("Set as Active League")
                                 .font(.body).fontWeight(.medium)

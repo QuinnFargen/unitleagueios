@@ -17,9 +17,20 @@ struct ViewTeamList: View {
         Array(Set(teams.filter { $0.id != 50000 && $0.id != 60000 }.compactMap(\.conf))).sorted()
     }
 
+    private static let cfbFBSDivOrder = ["ACC", "B10", "B12", "SEC", "IND"]
+
     private var divs: [String] {
         guard let conf = selectedConf else { return [] }
-        return Array(Set(teams.filter { $0.id != 50000 && $0.id != 60000 && $0.conf == conf }.compactMap(\.div))).sorted()
+        let raw = Array(Set(teams.filter { $0.id != 50000 && $0.id != 60000 && $0.conf == conf }.compactMap(\.div)))
+        if league.id == 5 && conf == "FBS" {
+            let priority = Self.cfbFBSDivOrder
+            return raw.sorted {
+                let li = priority.firstIndex(of: $0) ?? Int.max
+                let ri = priority.firstIndex(of: $1) ?? Int.max
+                return li == ri ? $0 < $1 : li < ri
+            }
+        }
+        return raw.sorted()
     }
 
     private var displayedTeams: [Team] {
