@@ -7,9 +7,8 @@ struct TabLeaguesView: View {
     @State private var showingJoin = false
     @State private var showingCreate = false
 
-    @AppStorage("customUserName")   private var customUserName: String   = ""
-    @AppStorage("appleUserName")    private var appleUserName: String    = ""
-    @AppStorage("profileColorName") private var profileColorName: String = ProfileOption.colorNames[0]
+    @AppStorage("customUserName") private var customUserName: String = ""
+    @AppStorage("appleUserName")  private var appleUserName: String  = ""
 
     private var userLeagues: [UserLeague] {
         (try? JSONDecoder().decode([UserLeague].self, from: userLeaguesData)) ?? []
@@ -23,10 +22,10 @@ struct TabLeaguesView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         HStack(spacing: 12) {
-                            LeagueActionButton(title: "Join", icon: "person.badge.plus", tint: .green) {
+                            LeagueActionButton(title: "Join", icon: "person.badge.plus", tint: theme.accent) {
                                 showingJoin = true
                             }
-                            LeagueActionButton(title: "Create", icon: "plus.circle", tint: theme.error) {
+                            LeagueActionButton(title: "Create", icon: "plus.circle", tint: theme.accent) {
                                 showingCreate = true
                             }
                         }
@@ -38,8 +37,7 @@ struct TabLeaguesView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                             CareerCard(
-                                displayName: customUserName.isEmpty ? (appleUserName.isEmpty ? "Me" : appleUserName) : customUserName,
-                                colorName: profileColorName
+                                displayName: customUserName.isEmpty ? (appleUserName.isEmpty ? "Me" : appleUserName) : customUserName
                             )
                         }
 
@@ -177,13 +175,12 @@ private struct CareerCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let displayName: String
-    let colorName: String
 
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: "trophy.fill")
                 .font(.title2)
-                .foregroundStyle(ProfileOption.color(for: colorName))
+                .foregroundStyle(theme.accent)
                 .frame(width: 44, height: 44)
                 .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -218,9 +215,9 @@ private struct LeagueFormSheet: View {
     @State private var errorMessage: String?
     @State private var selectedLeagueId: Int?
     @State private var leagueName = ""
-    @State private var selectedColorName: String = LeagueOption.colorNames[0]
+    @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
     @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
-    @AppStorage("leagueColorName") private var leagueColorName: String = LeagueOption.colorNames[0]
+    @AppStorage("leagueColorName") private var leagueColorName: String = AccentOption.allCases[0].rawValue
 
     private let service = LeagueService()
 
@@ -283,21 +280,21 @@ private struct LeagueFormSheet: View {
 
                     Section("Your Color") {
                         HStack(spacing: 16) {
-                            ForEach(LeagueOption.colorNames, id: \.self) { name in
+                            ForEach(AccentOption.allCases) { option in
                                 Button {
-                                    selectedColorName = name
+                                    selectedColorName = option.rawValue
                                 } label: {
                                     Circle()
-                                        .fill(ProfileOption.color(for: name))
+                                        .fill(option.color)
                                         .frame(width: 36, height: 36)
                                         .overlay(
                                             Circle()
                                                 .stroke(theme.primaryText(colorScheme),
-                                                        lineWidth: selectedColorName == name ? 2.5 : 0)
+                                                        lineWidth: selectedColorName == option.rawValue ? 2.5 : 0)
                                         )
                                         .shadow(
-                                            color: ProfileOption.color(for: name)
-                                                .opacity(selectedColorName == name ? 0.6 : 0),
+                                            color: option.color
+                                                .opacity(selectedColorName == option.rawValue ? 0.6 : 0),
                                             radius: 6
                                         )
                                 }

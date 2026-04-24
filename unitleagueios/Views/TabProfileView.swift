@@ -4,10 +4,10 @@ import AuthenticationServices
 struct TabProfileView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("appleUserName") private var appleUserName: String = ""
-    @AppStorage("customUserName") private var customUserName: String = ""
-    @AppStorage("profileSymbol") private var profileSymbol: String = ProfileOption.symbols[0]
-    @AppStorage("profileColorName") private var profileColorName: String = ProfileOption.colorNames[0]
+    @AppStorage("appleUserName")   private var appleUserName: String   = ""
+    @AppStorage("customUserName")  private var customUserName: String  = ""
+    @AppStorage("profileSymbol")   private var profileSymbol: String   = ProfileOption.symbols[0]
+    @AppStorage("profileSaved")    private var profileSaved: Bool      = false
     @State private var authError: String?
     @State private var isEditingUsername = false
     @State private var usernameInput = ""
@@ -66,15 +66,56 @@ struct TabProfileView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
+
+            Button("Sign in as Test User") {
+                appleUserName = "Test User"
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
     }
 
     private var profileView: some View {
+        Group {
+            if profileSaved {
+                savedProfileView
+            } else {
+                editProfileView
+            }
+        }
+    }
+
+    private var savedProfileView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: profileSymbol)
+                .font(.system(size: 80))
+                .foregroundStyle(theme.accent)
+
+            Text(displayName)
+                .font(.title)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.primaryText(colorScheme))
+
+            Button("Edit Profile") {
+                profileSaved = false
+            }
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(theme.accent)
+            .padding(.top, 4)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var editProfileView: some View {
         ScrollView {
             VStack(spacing: 32) {
                 Image(systemName: profileSymbol)
                     .font(.system(size: 72))
-                    .foregroundStyle(ProfileOption.color(for: profileColorName))
+                    .foregroundStyle(theme.accent)
                     .padding(.top, 32)
 
                 if isEditingUsername {
@@ -144,40 +185,12 @@ struct TabProfileView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Avatar Color")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 32)
-
-                    HStack(spacing: 16) {
-                        ForEach(ProfileOption.colorNames, id: \.self) { name in
-                            Button {
-                                profileColorName = name
-                            } label: {
-                                Circle()
-                                    .fill(ProfileOption.color(for: name))
-                                    .frame(width: 40, height: 40)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(theme.primaryText(colorScheme), lineWidth: profileColorName == name ? 2.5 : 0)
-                                    )
-                                    .shadow(
-                                        color: ProfileOption.color(for: name).opacity(profileColorName == name ? 0.6 : 0),
-                                        radius: 6
-                                    )
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 32)
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
                     Text("Accent Color")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 32)
 
-                    HStack(spacing: 16) {
+                    HStack(spacing: 12) {
                         ForEach(AccentOption.allCases) { option in
                             Button {
                                 theme.accentOption = option
@@ -185,7 +198,7 @@ struct TabProfileView: View {
                                 VStack(spacing: 4) {
                                     Circle()
                                         .fill(option.color)
-                                        .frame(width: 40, height: 40)
+                                        .frame(width: 36, height: 36)
                                         .overlay(
                                             Circle()
                                                 .stroke(theme.primaryText(colorScheme), lineWidth: theme.accentOption == option ? 2.5 : 0)
@@ -201,21 +214,37 @@ struct TabProfileView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, 24)
                 }
 
-                Button {
-                    appleUserName = ""
-                    customUserName = ""
-                } label: {
-                    Text("Sign Out")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundStyle(theme.error)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(theme.error.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                VStack(spacing: 12) {
+                    Button {
+                        profileSaved = true
+                        isEditingUsername = false
+                    } label: {
+                        Text("Save Profile")
+                            .font(.body).fontWeight(.medium)
+                            .foregroundStyle(theme.accent)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(theme.accent.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    Button {
+                        appleUserName = ""
+                        customUserName = ""
+                        profileSaved = false
+                    } label: {
+                        Text("Sign Out")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(theme.error)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(theme.error.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                 }
                 .padding(.horizontal, 32)
                 .padding(.top, 8)
@@ -238,6 +267,7 @@ enum ProfileOption {
     static let colorNames = ["green", "blue", "orange", "purple", "red"]
 
     static func color(for name: String) -> Color {
+        if let accent = AccentOption(rawValue: name) { return accent.color }
         switch name {
         case "green":  return .green
         case "blue":   return .blue
