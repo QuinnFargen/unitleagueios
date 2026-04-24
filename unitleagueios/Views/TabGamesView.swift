@@ -7,6 +7,7 @@ struct TabGamesView: View {
     @State private var selectedLeagueId: Int? = nil
     @State private var selectedTeamId: Int? = nil
     @State private var games: [Game] = []
+    @State private var allGames: [Game] = []
     @State private var teams: [Team] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -47,6 +48,14 @@ struct TabGamesView: View {
 
     private var fetchKey: String {
         "\(selectedDate.timeIntervalSince1970)-\(selectedLeagueId ?? 0)"
+    }
+
+    private var dateKey: String {
+        "\(selectedDate.timeIntervalSince1970)"
+    }
+
+    private var leaguesWithGames: Set<Int> {
+        Set(allGames.map(\.leagueId))
     }
 
     private let leagues: [(label: String, id: Int?)] = [
@@ -133,7 +142,8 @@ struct TabGamesView: View {
                             ForEach(leagues, id: \.label) { league in
                                 FilterChip(
                                     label: league.label,
-                                    isSelected: selectedLeagueId == league.id
+                                    isSelected: selectedLeagueId == league.id,
+                                    availabilityTint: league.id.map { leaguesWithGames.contains($0) ? theme.win : theme.loss }
                                 ) {
                                     selectedLeagueId = (selectedLeagueId == league.id) ? nil : league.id
                                     selectedTeamId = nil
@@ -222,6 +232,7 @@ struct TabGamesView: View {
             .tabToolbar()
         }
         .task(id: fetchKey) { await fetchGames() }
+        .task(id: dateKey) { await fetchAllGames() }
         .onChange(of: selectedLeagueId) { _, leagueId in
             Task {
                 if let id = leagueId {
@@ -246,6 +257,10 @@ struct TabGamesView: View {
         isLoading = false
     }
 
+    private func fetchAllGames() async {
+        allGames = (try? await gameService.fetchGames(date: selectedDate, leagueId: nil)) ?? []
+    }
+
     private func fetchTeams(leagueId: Int) async {
         do {
             teams = try await teamService.fetchTeams(leagueId: leagueId)
@@ -262,6 +277,7 @@ struct FilterChip: View {
     @Environment(\.colorScheme) private var colorScheme
     let label: String
     let isSelected: Bool
+    var availabilityTint: Color? = nil
     let action: () -> Void
 
     var body: some View {
@@ -273,6 +289,10 @@ struct FilterChip: View {
                 .padding(.vertical, 6)
                 .background(isSelected ? theme.chipSelected(colorScheme) : theme.chipUnselected(colorScheme))
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(availabilityTint ?? .clear, lineWidth: 1.5)
+                )
         }
     }
 }
@@ -316,14 +336,13 @@ private struct GameCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
                     Text(game.away)
-                        .fontWeight(game.winner == game.away ? .bold : .regular)
+                        .foregroundStyle(game.winner == game.away ? theme.win : theme.primaryText(colorScheme))
                     Text("@")
                         .foregroundStyle(.secondary)
                     Text(game.home)
-                        .fontWeight(game.winner == game.home ? .bold : .regular)
+                        .foregroundStyle(game.winner == game.home ? theme.win : theme.primaryText(colorScheme))
                 }
                 .font(.headline)
-                .foregroundStyle(theme.primaryText(colorScheme))
             }
 
             Spacer()
