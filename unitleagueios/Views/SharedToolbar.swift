@@ -25,10 +25,9 @@ enum LeagueOption {
 struct TabToolbar: ViewModifier {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("profileSymbol")    private var profileSymbol: String    = ProfileOption.symbols[0]
-    @AppStorage("profileColorName") private var profileColorName: String = ProfileOption.colorNames[0]
-    @AppStorage("leagueSymbol")     private var leagueSymbol: String     = "sportscourt"
-    @AppStorage("leagueColorName")  private var leagueColorName: String  = LeagueOption.colorNames[0]
+    @AppStorage("profileSymbol")   private var profileSymbol: String   = ProfileOption.symbols[0]
+    @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
+    @AppStorage("leagueColorName") private var leagueColorName: String = AccentOption.allCases[0].rawValue
     @AppStorage("userUnits")        private var userUnits: Int           = 100
     @AppStorage("activeLeagueId")   private var activeLeagueId: Int      = -1
     @AppStorage("userLeagues")      private var userLeaguesData: Data    = Data()
@@ -69,7 +68,7 @@ struct TabToolbar: ViewModifier {
                     Menu {
                         Button {
                             leagueSymbol    = "trophy.fill"
-                            leagueColorName = profileColorName
+                            leagueColorName = theme.accentOption.rawValue
                             activeLeagueId  = -1
                         } label: {
                             Label("My Career", systemImage: activeLeagueId == -1 ? "checkmark" : "trophy.fill")
@@ -111,7 +110,7 @@ struct TabToolbar: ViewModifier {
 
                         Image(systemName: profileSymbol)
                             .font(.title2)
-                            .foregroundStyle(ProfileOption.color(for: profileColorName))
+                            .foregroundStyle(theme.accent)
                     }
                 }
             }

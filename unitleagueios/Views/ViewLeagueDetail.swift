@@ -6,9 +6,8 @@ struct ViewLeagueDetail: View {
     @AppStorage("userLeagues")      private var userLeaguesData: Data    = Data()
     @AppStorage("appleUserName")    private var appleUserName: String    = ""
     @AppStorage("customUserName")   private var customUserName: String   = ""
-    @AppStorage("profileSymbol")    private var profileSymbol: String    = ProfileOption.symbols[0]
-    @AppStorage("profileColorName") private var profileColorName: String = ProfileOption.colorNames[0]
-    @AppStorage("userUnits")        private var userUnits: Int           = 100
+    @AppStorage("profileSymbol") private var profileSymbol: String = ProfileOption.symbols[0]
+    @AppStorage("userUnits")     private var userUnits: Int        = 100
     @AppStorage("leagueSymbol")     private var leagueSymbol: String     = "sportscourt"
     @AppStorage("leagueColorName")  private var leagueColorName: String  = LeagueOption.colorNames[0]
     @AppStorage("activeLeagueId")   private var activeLeagueId: Int      = -1
@@ -21,7 +20,7 @@ struct ViewLeagueDetail: View {
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
             name: customUserName.isEmpty ? (appleUserName.isEmpty ? "Me" : appleUserName) : customUserName,
             symbol: profileSymbol,
-            colorName: profileColorName,
+            colorName: "",
             units: userUnits
         )
     }
@@ -142,7 +141,7 @@ private struct MemberRow: View {
 
             Image(systemName: member.symbol)
                 .font(.title2)
-                .foregroundStyle(ProfileOption.color(for: member.colorName))
+                .foregroundStyle(isCurrentUser ? theme.accent : ProfileOption.color(for: member.colorName))
 
             Text(member.name)
                 .font(.body).fontWeight(isCurrentUser ? .semibold : .regular)

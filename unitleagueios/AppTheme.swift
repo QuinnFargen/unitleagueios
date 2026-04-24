@@ -1,25 +1,31 @@
 import SwiftUI
 
 enum AccentOption: String, CaseIterable, Identifiable {
-    case green  = "green"
-    case red    = "red"
-    case yellow = "yellow"
+    case green   = "green"
+    case red     = "red"
+    case yellow  = "yellow"
+    case stadium = "stadium"
+    case teal    = "teal"
 
     var id: String { rawValue }
 
     var color: Color {
         switch self {
-        case .green:  return Color(hex: "9FAA67")
-        case .red:    return Color(hex: "C7543E")
-        case .yellow: return Color(hex: "D8B061")
+        case .green:   return Color(hex: "9FAA67")
+        case .red:     return Color(hex: "C7543E")
+        case .yellow:  return Color(hex: "D8B061")
+        case .stadium: return Color(hex: "7B5EA7")
+        case .teal:    return Color(hex: "4ECDC4")
         }
     }
 
     var label: String {
         switch self {
-        case .green:  return "Sage"
-        case .red:    return "Clay"
-        case .yellow: return "Amber"
+        case .green:   return "Sage"
+        case .red:     return "Clay"
+        case .yellow:  return "Amber"
+        case .stadium: return "Stadium"
+        case .teal:    return "Teal"
         }
     }
 }
