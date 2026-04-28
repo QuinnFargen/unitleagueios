@@ -2,7 +2,7 @@ import Foundation
 
 class SchedService {
     func fetchSchedule(teamId: Int? = nil, leagueId: Int? = nil, yr: Int? = nil) async throws -> [Sched] {
-        var components = URLComponents(string: "\(APIClient.baseURL)/ball/sched")!
+        var components = URLComponents(string: "\(APIClient.baseURL)/mart/sched")!
         var queryItems: [URLQueryItem] = []
         if let teamId   { queryItems.append(URLQueryItem(name: "team_id",   value: "\(teamId)")) }
         if let leagueId { queryItems.append(URLQueryItem(name: "league_id", value: "\(leagueId)")) }

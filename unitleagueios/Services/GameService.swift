@@ -10,7 +10,7 @@ class GameService {
 
     func fetchGames(date: Date, leagueId: Int?) async throws -> [Game] {
         let dateString = dateFormatter.string(from: date)
-        var urlString = "\(APIClient.baseURL)/ball/game?game_dt=\(dateString)"
+        var urlString = "\(APIClient.baseURL)/mart/game?game_dt=\(dateString)"
         if let id = leagueId {
             urlString += "&league_id=\(id)"
         }
