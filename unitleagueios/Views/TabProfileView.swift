@@ -8,6 +8,7 @@ struct TabProfileView: View {
     @AppStorage("customUserName")  private var customUserName: String  = ""
     @AppStorage("profileSymbol")   private var profileSymbol: String   = ProfileOption.symbols[0]
     @AppStorage("profileSaved")    private var profileSaved: Bool      = false
+    @AppStorage("bettorId")        private var bettorId: Int           = 0
     @State private var authError: String?
     @State private var isEditingUsername = false
     @State private var usernameInput = ""
@@ -38,15 +39,27 @@ struct TabProfileView: View {
                 .foregroundStyle(theme.primaryText(colorScheme))
 
             SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName]
+                request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
                 switch result {
                 case .success(let auth):
                     guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
                     let first = credential.fullName?.givenName ?? ""
                     let last = credential.fullName?.familyName ?? ""
-                    appleUserName = [first, last].filter { !$0.isEmpty }.joined(separator: " ")
-                    if appleUserName.isEmpty { appleUserName = "Player" }
+                    let name = [first, last].filter { !$0.isEmpty }.joined(separator: " ")
+                    appleUserName = name.isEmpty ? "Player" : name
+                    let appleSub = credential.user
+                    let appleEmail = credential.email
+                    let appleName = name.isEmpty ? nil : name
+                    Task {
+                        if let bettor = try? await BettorService().createBettor(
+                            appleSub: appleSub,
+                            appleEmail: appleEmail,
+                            appleName: appleName
+                        ) {
+                            bettorId = bettor.bettorId
+                        }
+                    }
                 case .failure(let error):
                     let asError = error as? ASAuthorizationError
                     if asError?.code != .canceled {

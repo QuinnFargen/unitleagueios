@@ -25,7 +25,7 @@ struct MainTabView: View {
                 }
                 .tag(2)
 
-            PlaceholderView(title: "Bets")
+            TabBetsView()
                 .tabItem {
                     Label("Bets", systemImage: "bitcoinsign.bank.building")
                 }
@@ -41,20 +41,6 @@ struct MainTabView: View {
     }
 }
 
-private struct PlaceholderView: View {
-    let title: String
-    @EnvironmentObject private var theme: AppTheme
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        ZStack {
-            theme.appBackground(colorScheme).ignoresSafeArea()
-            Text(title)
-                .font(.title2)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
 
 #Preview {
     MainTabView()
