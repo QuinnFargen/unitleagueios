@@ -238,8 +238,8 @@ private struct OddBestCard: View {
                 if odd.mlHomeBetHash != nil || odd.mlAwayBetHash != nil {
                     OddsRow(
                         label: "ML",
-                        awayValue: odd.mlAwayPrice.map(formatAmericanOdds),
-                        homeValue: odd.mlHomePrice.map(formatAmericanOdds),
+                        awayValue: odd.mlAwayPrice.map(formatPrice),
+                        homeValue: odd.mlHomePrice.map(formatPrice),
                         awayPoints: nil,
                         homePoints: nil,
                         bookmaker: odd.mlHomeBookmaker ?? odd.mlAwayBookmaker,
@@ -252,8 +252,8 @@ private struct OddBestCard: View {
                 if odd.sprHomeBetHash != nil || odd.sprAwayBetHash != nil {
                     OddsRow(
                         label: "SPR",
-                        awayValue: odd.sprAwayPrice.map(formatAmericanOdds),
-                        homeValue: odd.sprHomePrice.map(formatAmericanOdds),
+                        awayValue: odd.sprAwayPrice.map(formatPrice),
+                        homeValue: odd.sprHomePrice.map(formatPrice),
                         awayPoints: odd.sprAwayPoints.map(formatPoints),
                         homePoints: odd.sprHomePoints.map(formatPoints),
                         bookmaker: odd.sprHomeBookmaker ?? odd.sprAwayBookmaker,
@@ -266,8 +266,8 @@ private struct OddBestCard: View {
                 if odd.overBetHash != nil || odd.underBetHash != nil {
                     OddsRow(
                         label: "O/U",
-                        awayValue: odd.overPrice.map(formatAmericanOdds),
-                        homeValue: odd.underPrice.map(formatAmericanOdds),
+                        awayValue: odd.overPrice.map(formatPrice),
+                        homeValue: odd.underPrice.map(formatPrice),
                         awayPoints: odd.overPoints.map { "O \(formatPoints($0))" },
                         homePoints: odd.underPoints.map { "U \(formatPoints($0))" },
                         bookmaker: odd.overBookmaker ?? odd.underBookmaker,
@@ -286,8 +286,8 @@ private struct OddBestCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private func formatAmericanOdds(_ price: Int) -> String {
-        price >= 0 ? "+\(price)" : "\(price)"
+    private func formatPrice(_ price: Double) -> String {
+        String(format: "%.2f", price)
     }
 
     private func formatPoints(_ points: Double) -> String {

@@ -9,6 +9,8 @@ struct TabProfileView: View {
     @AppStorage("profileSymbol")   private var profileSymbol: String   = ProfileOption.symbols[0]
     @AppStorage("profileSaved")    private var profileSaved: Bool      = false
     @AppStorage("bettorId")        private var bettorId: Int           = 0
+    @AppStorage("appleSub")        private var appleSub: String        = ""
+    @AppStorage("appleEmail")      private var appleEmail: String      = ""
     @State private var authError: String?
     @State private var isEditingUsername = false
     @State private var usernameInput = ""
@@ -44,18 +46,22 @@ struct TabProfileView: View {
                 switch result {
                 case .success(let auth):
                     guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
+                    // Apple only returns fullName and email on the very first authorization.
+                    // Persist them so subsequent sign-ins still have the values.
                     let first = credential.fullName?.givenName ?? ""
                     let last = credential.fullName?.familyName ?? ""
                     let name = [first, last].filter { !$0.isEmpty }.joined(separator: " ")
-                    appleUserName = name.isEmpty ? "Player" : name
-                    let appleSub = credential.user
-                    let appleEmail = credential.email
-                    let appleName = name.isEmpty ? nil : name
+                    if !name.isEmpty { appleUserName = name }
+                    if appleUserName.isEmpty { appleUserName = "Player" }
+                    appleSub = credential.user
+                    if let email = credential.email { appleEmail = email }
+                    let storedEmail = appleEmail.isEmpty ? nil : appleEmail
+                    let storedName = appleUserName == "Player" ? nil : appleUserName
                     Task {
                         if let bettor = try? await BettorService().createBettor(
                             appleSub: appleSub,
-                            appleEmail: appleEmail,
-                            appleName: appleName
+                            appleEmail: storedEmail,
+                            appleName: storedName
                         ) {
                             bettorId = bettor.bettorId
                         }
@@ -247,6 +253,9 @@ struct TabProfileView: View {
                     Button {
                         appleUserName = ""
                         customUserName = ""
+                        appleEmail = ""
+                        appleSub = ""
+                        bettorId = 0
                         profileSaved = false
                     } label: {
                         Text("Sign Out")

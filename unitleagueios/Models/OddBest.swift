@@ -14,32 +14,32 @@ struct OddBest: Codable, Identifiable {
     // Moneyline
     let mlHomeBetHash: String?
     let mlHomeBookmaker: String?
-    let mlHomePrice: Int?
+    let mlHomePrice: Double?
     let mlHomeBetConcat: String?
     let mlAwayBetHash: String?
     let mlAwayBookmaker: String?
-    let mlAwayPrice: Int?
+    let mlAwayPrice: Double?
     let mlAwayBetConcat: String?
     // Spread
     let sprHomeBetHash: String?
     let sprHomeBookmaker: String?
-    let sprHomePrice: Int?
+    let sprHomePrice: Double?
     let sprHomePoints: Double?
     let sprHomeBetConcat: String?
     let sprAwayBetHash: String?
     let sprAwayBookmaker: String?
-    let sprAwayPrice: Int?
+    let sprAwayPrice: Double?
     let sprAwayPoints: Double?
     let sprAwayBetConcat: String?
     // Over/Under
     let overBetHash: String?
     let overBookmaker: String?
-    let overPrice: Int?
+    let overPrice: Double?
     let overPoints: Double?
     let overBetConcat: String?
     let underBetHash: String?
     let underBookmaker: String?
-    let underPrice: Int?
+    let underPrice: Double?
     let underPoints: Double?
     let underBetConcat: String?
     // Meta
