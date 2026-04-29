@@ -70,7 +70,7 @@ final class AppTheme: ObservableObject {
         scheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.10)
     }
 
-    var win:   Color { Color(hex: "34C759") }
+    var win:   Color { Color(hex: "9FAA67") }
     var loss:  Color { Color(hex: "C7543E") }
     var error: Color { Color(hex: "C7543E") }
 }

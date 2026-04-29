@@ -6,6 +6,7 @@ struct TabResearchView: View {
     @State private var leagues: [League] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var expandedLeagueId: Int? = nil
 
     private let service = LeagueService()
 
@@ -30,34 +31,21 @@ struct TabResearchView: View {
                         }
                         .padding()
                     } else {
-                        VStack{
-                            Text("Sports Leagues")
-                                .font(.title)
-                                .foregroundStyle(theme.primaryText(colorScheme))
-                            ScrollView {
-                                LazyVStack(spacing: 12) {
-                                    ForEach(leagues) { league in
-                                        NavigationLink {
-                                            ViewTeamList(league: league)
-                                        } label: {
-                                            LeagueCard(league: league)
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(leagues) { league in
+                                    LeagueExpandableCard(
+                                        league: league,
+                                        isExpanded: expandedLeagueId == league.id
+                                    ) {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            expandedLeagueId = expandedLeagueId == league.id ? nil : league.id
                                         }
-                                        .buttonStyle(.plain)
                                     }
                                 }
-                                .padding(.horizontal)
-                                .padding(.top, 8)
                             }
-                            HStack{
-                                Label("Teams", systemImage: "sportscourt")
-                                Spacer()
-                                Label("Ranks", systemImage: "list.number")
-                                Spacer()
-                                Label("Sched", systemImage: "calendar")
-                                Spacer()
-                                Label("Odds", systemImage: "books.vertical")
-                            }
-                            Spacer()
+                            .padding(.horizontal)
+                            .padding(.top, 12)
                         }
                     }
                 }
@@ -81,62 +69,108 @@ struct TabResearchView: View {
     }
 }
 
-struct LeagueCard: View {
+// MARK: - LeagueExpandableCard
+
+private struct LeagueExpandableCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let league: League
+    let isExpanded: Bool
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
-            
-            Image(systemName: league.sportIcon)
-                .font(.title2)
-                .foregroundStyle(theme.primaryText(colorScheme))
-                .frame(width: 44, height: 44)
-                .background(theme.cardBackground(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(league.abbr)
-                    .font(.title)
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                //                Text(league.name)
-                //                    .font(.subheadline)
-                //                    .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            // Header row
+            Button(action: onTap) {
+                HStack(spacing: 16) {
+                    Image(systemName: league.sportIcon)
+                        .font(.title2)
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                        .frame(width: 44, height: 44)
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(league.abbr)
+                            .font(.title2.weight(.semibold))
+                            .foregroundStyle(theme.primaryText(colorScheme))
+                        Text(league.sport)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(Circle())
+                }
+                .padding()
             }
-            
-            Spacer()
-            
-            Image(systemName: "list.number")
-                .font(.title2)
-                .foregroundStyle(theme.primaryText(colorScheme))
-                .frame(width: 30, height: 30)
-                .background(theme.cardBackground(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            
-            Image(systemName: "calendar")
-                .font(.title2)
-                .foregroundStyle(theme.primaryText(colorScheme))
-                .frame(width: 30, height: 30)
-                .background(theme.cardBackground(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            
-            Image(systemName: "books.vertical")
-                .font(.title2)
-                .foregroundStyle(theme.primaryText(colorScheme))
-                .frame(width: 30, height: 30)
-                .background(theme.cardBackground(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            
-            //            Spacer()
-            //
-            //            Image(systemName: "chevron.right")
-            //                .font(.caption)
-            //                .foregroundStyle(.tertiary)
+            .buttonStyle(.plain)
+
+            // Expanded options
+            if isExpanded {
+                Divider().background(theme.divider(colorScheme))
+                    .padding(.horizontal)
+
+                HStack(spacing: 12) {
+                    NavigationLink {
+                        ViewTeamList(league: league)
+                    } label: {
+                        LeagueOptionCell(icon: "person.2", title: "Teams", subtitle: "All teams")
+                    }
+                    .buttonStyle(.plain)
+
+                    LeagueOptionCell(icon: "list.number", title: "Ranks", subtitle: "Standings")
+
+                    LeagueOptionCell(icon: "calendar", title: "Sched", subtitle: "Recent")
+
+                    LeagueOptionCell(icon: "chart.bar", title: "Odds", subtitle: "Performance")
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+            }
         }
-        .padding()
         .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - LeagueOptionCell
+
+private struct LeagueOptionCell: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
+    let icon: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(theme.accent)
+                .frame(width: 32, height: 32)
+                .background(theme.appBackground(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(theme.cardBackground(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 
