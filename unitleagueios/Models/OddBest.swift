@@ -10,6 +10,7 @@ struct OddBest: Codable, Identifiable {
     let awayAbbr: String
     let homeTeamId: Int
     let awayTeamId: Int
+    let leagueId: Int
     let hasActiveBets: Bool
     // Moneyline
     let mlHomeBetHash: String?
@@ -54,6 +55,7 @@ struct OddBest: Codable, Identifiable {
         case awayAbbr = "away_abbr"
         case homeTeamId = "home_team_id"
         case awayTeamId = "away_team_id"
+        case leagueId = "league_id"
         case hasActiveBets = "has_active_bets"
         case mlHomeBetHash = "ml_home_bet_hash"
         case mlHomeBookmaker = "ml_home_bookmaker"

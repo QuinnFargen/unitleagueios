@@ -4,13 +4,18 @@ struct TabBetsView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedDate: Date = .now
+    @State private var selectedLeagueId: Int? = nil
     @State private var odds: [OddBest] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showDatePicker = false
-    @State private var activeBetsOnly = false
 
     private let service = OddBestService()
+
+    private let leagues: [(label: String, id: Int)] = [
+        ("NBA", 1), ("NFL", 2), ("NHL", 3),
+        ("MLB", 4), ("CFB", 5), ("CBB", 6)
+    ]
 
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -36,11 +41,7 @@ struct TabBetsView: View {
         return Calendar.current.component(.day, from: next)
     }
 
-    private var displayedOdds: [OddBest] {
-        activeBetsOnly ? odds.filter(\.hasActiveBets) : odds
-    }
-
-    private var fetchKey: String { dateFormatter.string(from: selectedDate) }
+    private var fetchKey: String { "\(dateFormatter.string(from: selectedDate))-\(selectedLeagueId ?? 0)" }
 
     var body: some View {
         NavigationStack {
@@ -104,18 +105,21 @@ struct TabBetsView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 10)
 
-                    // Active bets filter
-                    HStack {
-                        FilterChip(
-                            label: "Has Odds",
-                            isSelected: activeBetsOnly
-                        ) {
-                            activeBetsOnly.toggle()
+                    // League filter
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(leagues, id: \.label) { league in
+                                FilterChip(
+                                    label: league.label,
+                                    isSelected: selectedLeagueId == league.id
+                                ) {
+                                    selectedLeagueId = (selectedLeagueId == league.id) ? nil : league.id
+                                }
+                            }
                         }
-                        Spacer()
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
 
                     Divider().background(theme.divider(colorScheme))
 
@@ -139,7 +143,7 @@ struct TabBetsView: View {
                             }
                             .padding()
                             Spacer()
-                        } else if displayedOdds.isEmpty {
+                        } else if odds.isEmpty {
                             Spacer()
                             Text("No odds available")
                                 .foregroundStyle(.secondary)
@@ -147,7 +151,7 @@ struct TabBetsView: View {
                         } else {
                             ScrollView {
                                 LazyVStack(spacing: 12) {
-                                    ForEach(displayedOdds) { odd in
+                                    ForEach(odds) { odd in
                                         OddBestCard(odd: odd)
                                     }
                                 }
@@ -181,7 +185,7 @@ struct TabBetsView: View {
         errorMessage = nil
         odds = []
         do {
-            odds = try await service.fetchOddBest(gameDt: dateFormatter.string(from: selectedDate))
+            odds = try await service.fetchOddBest(gameDt: dateFormatter.string(from: selectedDate), leagueId: selectedLeagueId)
         } catch {
             errorMessage = error.localizedDescription
         }
