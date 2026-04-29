@@ -64,12 +64,12 @@ struct TabLeaguesView: View {
             }
             .tabToolbar()
             .sheet(isPresented: $showingJoin) {
-                LeagueFormSheet(title: "Join League", confirmLabel: "Join") { newLeague in
+                JoinLeagueSheet { newLeague in
                     append(newLeague)
                 }
             }
             .sheet(isPresented: $showingCreate) {
-                LeagueFormSheet(title: "Create League", confirmLabel: "Create") { newLeague in
+                CreateLeagueSheet { newLeague in
                     append(newLeague)
                 }
             }
@@ -92,14 +92,16 @@ struct UserLeague: Codable, Identifiable {
     let sport: String
     let customName: String
     let colorName: String
+    let password: String
 
-    init(id: UUID, leagueId: Int, abbr: String, sport: String, customName: String, colorName: String) {
+    init(id: UUID, leagueId: Int, abbr: String, sport: String, customName: String, colorName: String, password: String = "") {
         self.id = id
         self.leagueId = leagueId
         self.abbr = abbr
         self.sport = sport
         self.customName = customName
         self.colorName = colorName
+        self.password = password
     }
 
     init(from decoder: Decoder) throws {
@@ -110,6 +112,7 @@ struct UserLeague: Codable, Identifiable {
         sport      = try c.decode(String.self, forKey: .sport)
         customName = try c.decode(String.self, forKey: .customName)
         colorName  = (try? c.decode(String.self, forKey: .colorName)) ?? LeagueOption.colorNames[0]
+        password   = (try? c.decode(String.self, forKey: .password)) ?? ""
     }
 }
 
@@ -202,19 +205,153 @@ private struct CareerCard: View {
     }
 }
 
-private struct LeagueFormSheet: View {
+// MARK: - Join Sheet
+
+private struct JoinLeagueSheet: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    let title: String
-    let confirmLabel: String
+    @Environment(\.dismiss) private var dismiss
     let onConfirm: (UserLeague) -> Void
 
+    @State private var leagueName = ""
+    @State private var password = ""
+    @State private var selectedSymbolId: Int = 1
+    @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
+
+    private let sportSymbols: [(id: Int, icon: String, label: String, sport: String)] = [
+        (1, "basketball",             "NBA",   "Basketball"),
+        (2, "american.football",      "NFL",   "Football"),
+        (3, "hockey.puck",            "NHL",   "Hockey"),
+        (4, "baseball",               "MLB",   "Baseball"),
+        (5, "american.football.fill", "NCAAF", "Coll. Football"),
+        (6, "basketball.fill",        "NCAAB", "Coll. Basketball"),
+    ]
+
+    private var selectedSport: (id: Int, icon: String, label: String, sport: String) {
+        sportSymbols.first { $0.id == selectedSymbolId } ?? sportSymbols[0]
+    }
+
+    private func makeAbbr(_ name: String) -> String {
+        let initials = name.split(separator: " ")
+            .compactMap { $0.first.map { String($0).uppercased() } }
+            .joined()
+        return initials.isEmpty ? String(name.prefix(4).uppercased()) : String(initials.prefix(4))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                theme.appBackground(colorScheme).ignoresSafeArea()
+
+                Form {
+                    Section("League Name") {
+                        TextField("Enter league name", text: $leagueName)
+                    }
+
+                    Section("Password") {
+                        SecureField("Enter password", text: $password)
+                    }
+
+                    Section("Symbol") {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 72))], spacing: 12) {
+                            ForEach(sportSymbols, id: \.id) { sport in
+                                Button {
+                                    selectedSymbolId = sport.id
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        Image(systemName: sport.icon)
+                                            .font(.title2)
+                                            .foregroundStyle(selectedSymbolId == sport.id ? theme.accent : theme.primaryText(colorScheme))
+                                            .frame(width: 48, height: 48)
+                                            .background(selectedSymbolId == sport.id ? theme.accent.opacity(0.15) : theme.cardBackground(colorScheme))
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(selectedSymbolId == sport.id ? theme.accent : Color.clear, lineWidth: 1.5)
+                                            )
+                                        Text(sport.label)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 6)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    }
+
+                    Section("Your Color") {
+                        HStack(spacing: 16) {
+                            ForEach(AccentOption.allCases) { option in
+                                Button {
+                                    selectedColorName = option.rawValue
+                                } label: {
+                                    Circle()
+                                        .fill(option.color)
+                                        .frame(width: 36, height: 36)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(theme.primaryText(colorScheme),
+                                                        lineWidth: selectedColorName == option.rawValue ? 2.5 : 0)
+                                        )
+                                        .shadow(
+                                            color: option.color.opacity(selectedColorName == option.rawValue ? 0.6 : 0),
+                                            radius: 6
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .listRowBackground(Color.clear)
+                    }
+                }
+                .scrollContentBackground(.hidden)
+            }
+            .navigationTitle("Join League")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Join") {
+                        let sport = selectedSport
+                        onConfirm(UserLeague(
+                            id: UUID(),
+                            leagueId: sport.id,
+                            abbr: makeAbbr(leagueName),
+                            sport: sport.sport,
+                            customName: leagueName.trimmingCharacters(in: .whitespaces),
+                            colorName: selectedColorName,
+                            password: password
+                        ))
+                        dismiss()
+                    }
+                    .disabled(leagueName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .tint(theme.accent)
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Create Sheet
+
+private struct CreateLeagueSheet: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    let onConfirm: (UserLeague) -> Void
+
     @State private var leagues: [League] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var selectedLeagueId: Int?
     @State private var leagueName = ""
+    @State private var password = ""
     @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
     @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
     @AppStorage("leagueColorName") private var leagueColorName: String = AccentOption.allCases[0].rawValue
@@ -244,7 +381,7 @@ private struct LeagueFormSheet: View {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
                 Form {
-                    Section("Select League") {
+                    Section("Select Sport") {
                         if isLoading {
                             HStack(spacing: 10) {
                                 ProgressView()
@@ -278,6 +415,10 @@ private struct LeagueFormSheet: View {
                         TextField("Enter a name", text: $leagueName)
                     }
 
+                    Section("Password") {
+                        SecureField("Enter password", text: $password)
+                    }
+
                     Section("Your Color") {
                         HStack(spacing: 16) {
                             ForEach(AccentOption.allCases) { option in
@@ -293,11 +434,11 @@ private struct LeagueFormSheet: View {
                                                         lineWidth: selectedColorName == option.rawValue ? 2.5 : 0)
                                         )
                                         .shadow(
-                                            color: option.color
-                                                .opacity(selectedColorName == option.rawValue ? 0.6 : 0),
+                                            color: option.color.opacity(selectedColorName == option.rawValue ? 0.6 : 0),
                                             radius: 6
                                         )
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.vertical, 4)
@@ -306,12 +447,12 @@ private struct LeagueFormSheet: View {
                 }
                 .scrollContentBackground(.hidden)
             }
-            .navigationTitle(title)
+            .navigationTitle("Create League")
             .navigationBarTitleDisplayMode(.inline)
             .task { fetchLeagues() }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(confirmLabel) {
+                    Button("Create") {
                         if let league = selectedLeague {
                             leagueSymbol    = League.sportIcon(for: league.id)
                             leagueColorName = selectedColorName
@@ -321,7 +462,8 @@ private struct LeagueFormSheet: View {
                                 abbr: league.abbr,
                                 sport: league.sport,
                                 customName: leagueName.trimmingCharacters(in: .whitespaces),
-                                colorName: selectedColorName
+                                colorName: selectedColorName,
+                                password: password
                             ))
                         }
                         dismiss()

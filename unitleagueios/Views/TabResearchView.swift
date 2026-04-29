@@ -6,7 +6,7 @@ struct TabResearchView: View {
     @State private var leagues: [League] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var expandedLeagueId: Int? = nil
+    @State private var expandedLeagueId: Int? = 1
 
     private let service = LeagueService()
 
@@ -121,15 +121,15 @@ private struct LeagueExpandableCard: View {
                     NavigationLink {
                         ViewTeamList(league: league)
                     } label: {
-                        LeagueOptionCell(icon: "person.2", title: "Teams", subtitle: "All teams")
+                        LeagueOptionCell(icon: "person.2", title: "Teams")
                     }
                     .buttonStyle(.plain)
 
-                    LeagueOptionCell(icon: "list.number", title: "Ranks", subtitle: "Standings")
+                    LeagueOptionCell(icon: "list.number", title: "Ranks")
 
-                    LeagueOptionCell(icon: "calendar", title: "Sched", subtitle: "Recent")
+                    LeagueOptionCell(icon: "calendar", title: "Sched")
 
-                    LeagueOptionCell(icon: "chart.bar", title: "Odds", subtitle: "Performance")
+                    LeagueOptionCell(icon: "chart.bar", title: "Odds")
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 12)
@@ -147,7 +147,6 @@ private struct LeagueOptionCell: View {
     @Environment(\.colorScheme) private var colorScheme
     let icon: String
     let title: String
-    let subtitle: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -158,14 +157,9 @@ private struct LeagueOptionCell: View {
                 .background(theme.appBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(theme.primaryText(colorScheme))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)

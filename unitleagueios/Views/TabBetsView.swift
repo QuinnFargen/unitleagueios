@@ -5,6 +5,7 @@ struct TabBetsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedDate: Date = .now
     @State private var selectedLeagueId: Int? = nil
+    @State private var selectedBetType: String = "ALL"
     @State private var odds: [OddBest] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -114,6 +115,21 @@ struct TabBetsView: View {
                                     isSelected: selectedLeagueId == league.id
                                 ) {
                                     selectedLeagueId = (selectedLeagueId == league.id) ? nil : league.id
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(["ML", "SPR", "O/U", "ALL"], id: \.self) { betType in
+                                FilterChip(
+                                    label: betType,
+                                    isSelected: selectedBetType == betType
+                                ) {
+                                    selectedBetType = betType
                                 }
                             }
                         }
