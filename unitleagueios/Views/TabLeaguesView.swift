@@ -88,31 +88,31 @@ struct TabLeaguesView: View {
 struct UserLeague: Codable, Identifiable {
     let id: UUID
     let leagueId: Int
+    let oddLeagueId: Int?
     let abbr: String
     let sport: String
     let customName: String
     let colorName: String
-    let password: String
 
-    init(id: UUID, leagueId: Int, abbr: String, sport: String, customName: String, colorName: String, password: String = "") {
+    init(id: UUID, leagueId: Int, oddLeagueId: Int? = nil, abbr: String, sport: String, customName: String, colorName: String) {
         self.id = id
         self.leagueId = leagueId
+        self.oddLeagueId = oddLeagueId
         self.abbr = abbr
         self.sport = sport
         self.customName = customName
         self.colorName = colorName
-        self.password = password
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id         = try c.decode(UUID.self,   forKey: .id)
-        leagueId   = try c.decode(Int.self,    forKey: .leagueId)
-        abbr       = try c.decode(String.self, forKey: .abbr)
-        sport      = try c.decode(String.self, forKey: .sport)
-        customName = try c.decode(String.self, forKey: .customName)
-        colorName  = (try? c.decode(String.self, forKey: .colorName)) ?? LeagueOption.colorNames[0]
-        password   = (try? c.decode(String.self, forKey: .password)) ?? ""
+        id          = try c.decode(UUID.self,   forKey: .id)
+        leagueId    = try c.decode(Int.self,    forKey: .leagueId)
+        oddLeagueId = try? c.decode(Int.self,   forKey: .oddLeagueId)
+        abbr        = try c.decode(String.self, forKey: .abbr)
+        sport       = try c.decode(String.self, forKey: .sport)
+        customName  = try c.decode(String.self, forKey: .customName)
+        colorName   = (try? c.decode(String.self, forKey: .colorName)) ?? LeagueOption.colorNames[0]
     }
 }
 
@@ -213,10 +213,14 @@ private struct JoinLeagueSheet: View {
     @Environment(\.dismiss) private var dismiss
     let onConfirm: (UserLeague) -> Void
 
-    @State private var leagueName = ""
+    @AppStorage("bettorId") private var bettorId: Int = 0
+
+    @State private var leagueIdInput = ""
     @State private var password = ""
     @State private var selectedSymbolId: Int = 1
     @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
+    @State private var isLoading = false
+    @State private var errorMessage: String?
 
     private let sportSymbols: [(id: Int, icon: String, label: String, sport: String)] = [
         (1, "basketball",             "NBA",   "Basketball"),
@@ -231,11 +235,31 @@ private struct JoinLeagueSheet: View {
         sportSymbols.first { $0.id == selectedSymbolId } ?? sportSymbols[0]
     }
 
-    private func makeAbbr(_ name: String) -> String {
-        let initials = name.split(separator: " ")
-            .compactMap { $0.first.map { String($0).uppercased() } }
-            .joined()
-        return initials.isEmpty ? String(name.prefix(4).uppercased()) : String(initials.prefix(4))
+    private var oddLeagueId: Int? { Int(leagueIdInput.trimmingCharacters(in: .whitespaces)) }
+
+    private func join() {
+        guard let oddId = oddLeagueId else { return }
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                let bbl = try await LeagueService().joinLeague(bettorId: bettorId, oddLeagueId: oddId)
+                let sport = selectedSport
+                onConfirm(UserLeague(
+                    id: UUID(),
+                    leagueId: sport.id,
+                    oddLeagueId: bbl.leagueId,
+                    abbr: sport.label,
+                    sport: sport.sport,
+                    customName: "League \(bbl.leagueId)",
+                    colorName: selectedColorName
+                ))
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        }
     }
 
     var body: some View {
@@ -244,12 +268,21 @@ private struct JoinLeagueSheet: View {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
                 Form {
-                    Section("League Name") {
-                        TextField("Enter league name", text: $leagueName)
+                    Section("League ID") {
+                        TextField("Enter league ID", text: $leagueIdInput)
+                            .keyboardType(.numberPad)
                     }
 
                     Section("Password") {
                         SecureField("Enter password", text: $password)
+                    }
+
+                    if let error = errorMessage {
+                        Section {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(theme.error)
+                        }
                     }
 
                     Section("Symbol") {
@@ -309,26 +342,19 @@ private struct JoinLeagueSheet: View {
                     }
                 }
                 .scrollContentBackground(.hidden)
+
+                if isLoading {
+                    Color.black.opacity(0.2).ignoresSafeArea()
+                    ProgressView()
+                }
             }
             .navigationTitle("Join League")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Join") {
-                        let sport = selectedSport
-                        onConfirm(UserLeague(
-                            id: UUID(),
-                            leagueId: sport.id,
-                            abbr: makeAbbr(leagueName),
-                            sport: sport.sport,
-                            customName: leagueName.trimmingCharacters(in: .whitespaces),
-                            colorName: selectedColorName,
-                            password: password
-                        ))
-                        dismiss()
-                    }
-                    .disabled(leagueName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .tint(theme.accent)
+                    Button("Join") { join() }
+                        .disabled(oddLeagueId == nil || isLoading)
+                        .tint(theme.accent)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -346,28 +372,62 @@ private struct CreateLeagueSheet: View {
     @Environment(\.dismiss) private var dismiss
     let onConfirm: (UserLeague) -> Void
 
-    @State private var leagues: [League] = []
+    @AppStorage("bettorId") private var bettorId: Int = 0
+
+    @State private var martLeagues: [League] = []
+    @State private var isFetchingLeagues = false
+    @State private var fetchError: String?
+    @State private var selectedLeagueId: Int?
+
+    @State private var leagueName = ""
+    @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var selectedLeagueId: Int?
-    @State private var leagueName = ""
-    @State private var password = ""
-    @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
+
     @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
     @AppStorage("leagueColorName") private var leagueColorName: String = AccentOption.allCases[0].rawValue
 
     private let service = LeagueService()
 
     private var selectedLeague: League? {
-        leagues.first { $0.id == selectedLeagueId }
+        martLeagues.first { $0.id == selectedLeagueId }
     }
 
     private func fetchLeagues() {
+        isFetchingLeagues = true
+        fetchError = nil
+        Task {
+            do {
+                martLeagues = try await service.fetchLeagues()
+            } catch {
+                fetchError = error.localizedDescription
+            }
+            isFetchingLeagues = false
+        }
+    }
+
+    private func create() {
+        guard let league = selectedLeague else { return }
         isLoading = true
         errorMessage = nil
         Task {
             do {
-                leagues = try await service.fetchLeagues()
+                let oddLeague = try await service.createLeague(
+                    bettorId: bettorId,
+                    name: leagueName.trimmingCharacters(in: .whitespaces)
+                )
+                leagueSymbol    = League.sportIcon(for: league.id)
+                leagueColorName = selectedColorName
+                onConfirm(UserLeague(
+                    id: UUID(),
+                    leagueId: league.id,
+                    oddLeagueId: oddLeague.leagueId,
+                    abbr: league.abbr,
+                    sport: league.sport,
+                    customName: leagueName.trimmingCharacters(in: .whitespaces),
+                    colorName: selectedColorName
+                ))
+                dismiss()
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -382,13 +442,13 @@ private struct CreateLeagueSheet: View {
 
                 Form {
                     Section("Select Sport") {
-                        if isLoading {
+                        if isFetchingLeagues {
                             HStack(spacing: 10) {
                                 ProgressView()
                                 Text("Loading leagues...")
                                     .foregroundStyle(.secondary)
                             }
-                        } else if let error = errorMessage {
+                        } else if let error = fetchError {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(error)
                                     .font(.caption)
@@ -396,11 +456,11 @@ private struct CreateLeagueSheet: View {
                                 Button("Retry") { fetchLeagues() }
                                     .font(.caption)
                             }
-                        } else if leagues.isEmpty {
+                        } else if martLeagues.isEmpty {
                             Text("No leagues available")
                                 .foregroundStyle(.secondary)
                         } else {
-                            ForEach(leagues) { league in
+                            ForEach(martLeagues) { league in
                                 LeagueOptionRow(
                                     league: league,
                                     isSelected: selectedLeagueId == league.id
@@ -415,8 +475,12 @@ private struct CreateLeagueSheet: View {
                         TextField("Enter a name", text: $leagueName)
                     }
 
-                    Section("Password") {
-                        SecureField("Enter password", text: $password)
+                    if let error = errorMessage {
+                        Section {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(theme.error)
+                        }
                     }
 
                     Section("Your Color") {
@@ -446,30 +510,20 @@ private struct CreateLeagueSheet: View {
                     }
                 }
                 .scrollContentBackground(.hidden)
+
+                if isLoading {
+                    Color.black.opacity(0.2).ignoresSafeArea()
+                    ProgressView()
+                }
             }
             .navigationTitle("Create League")
             .navigationBarTitleDisplayMode(.inline)
             .task { fetchLeagues() }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        if let league = selectedLeague {
-                            leagueSymbol    = League.sportIcon(for: league.id)
-                            leagueColorName = selectedColorName
-                            onConfirm(UserLeague(
-                                id: UUID(),
-                                leagueId: league.id,
-                                abbr: league.abbr,
-                                sport: league.sport,
-                                customName: leagueName.trimmingCharacters(in: .whitespaces),
-                                colorName: selectedColorName,
-                                password: password
-                            ))
-                        }
-                        dismiss()
-                    }
-                    .disabled(selectedLeagueId == nil || leagueName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .tint(theme.accent)
+                    Button("Create") { create() }
+                        .disabled(selectedLeagueId == nil || leagueName.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
+                        .tint(theme.accent)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
