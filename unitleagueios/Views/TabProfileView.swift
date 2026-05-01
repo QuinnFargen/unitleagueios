@@ -243,13 +243,19 @@ struct TabProfileView: View {
                         }
                         isEditingUsername = false
                         profileSaved = true
-                        if bettorId != 0 {
+
+                        // Capture all values now, before entering the async Task
+                        let id       = bettorId
+                        let name     = customUserName.isEmpty ? appleUserName : customUserName
+                        let symbol   = profileSymbol
+                        let color    = theme.accentOption.rawValue
+                        if id != 0 {
                             Task {
                                 try? await BettorService().updateProfile(
-                                    bettorId: bettorId,
-                                    profileName: customUserName.isEmpty ? appleUserName : customUserName,
-                                    symbol: profileSymbol,
-                                    color: theme.accentOption.rawValue
+                                    bettorId: id,
+                                    profileName: name,
+                                    symbol: symbol,
+                                    color: color
                                 )
                             }
                         }
