@@ -46,9 +46,12 @@ class LeagueService {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, _) = try await URLSession.shared.data(for: request)
-        let response = try JSONDecoder().decode([String: OddLeague].self, from: data)
-        guard let league = response["league"] else { throw URLError(.cannotParseResponse) }
-        return league
+
+        struct CreateLeagueResponse: Codable {
+            let league: OddLeague
+            let membership: OddBbl
+        }
+        return try JSONDecoder().decode(CreateLeagueResponse.self, from: data).league
     }
 
     func joinLeague(bettorId: Int, oddLeagueId: Int) async throws -> OddBbl {
