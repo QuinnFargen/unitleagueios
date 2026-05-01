@@ -238,8 +238,21 @@ struct TabProfileView: View {
 
                 VStack(spacing: 12) {
                     Button {
-                        profileSaved = true
+                        if isEditingUsername && !usernameInput.trimmingCharacters(in: .whitespaces).isEmpty {
+                            customUserName = usernameInput.trimmingCharacters(in: .whitespaces)
+                        }
                         isEditingUsername = false
+                        profileSaved = true
+                        if bettorId != 0 {
+                            Task {
+                                try? await BettorService().updateProfile(
+                                    bettorId: bettorId,
+                                    profileName: customUserName.isEmpty ? appleUserName : customUserName,
+                                    symbol: profileSymbol,
+                                    color: theme.accentOption.rawValue
+                                )
+                            }
+                        }
                     } label: {
                         Text("Save Profile")
                             .font(.body).fontWeight(.medium)
