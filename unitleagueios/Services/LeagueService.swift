@@ -1,28 +1,5 @@
 import Foundation
 
-struct OddSyndicate: Codable {
-    let syndicateId: Int
-    let name: String
-
-    enum CodingKeys: String, CodingKey {
-        case syndicateId = "syndicate_id"
-        case name
-    }
-}
-
-struct OddRunner: Codable {
-    let runnerId: Int
-    let bettorId: Int
-    let syndicateId: Int
-    let role: String
-
-    enum CodingKeys: String, CodingKey {
-        case runnerId    = "runner_id"
-        case bettorId    = "bettor_id"
-        case syndicateId = "syndicate_id"
-        case role
-    }
-}
 
 class LeagueService {
     func fetchLeagues() async throws -> [League] {
@@ -33,7 +10,7 @@ class LeagueService {
         return try JSONDecoder().decode([League].self, from: data)
     }
 
-    func createSyndicate(bettorId: Int, name: String, description: String? = nil, fantasy: Bool = false) async throws -> OddSyndicate {
+    func createSyndicate(bettorId: Int, name: String, description: String? = nil, fantasy: Bool = false) async throws -> Syndicate {
         guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate") else {
             throw URLError(.badURL)
         }
@@ -48,13 +25,13 @@ class LeagueService {
         let (data, _) = try await URLSession.shared.data(for: request)
 
         struct CreateSyndicateResponse: Codable {
-            let syndicate: OddSyndicate
-            let runner: OddRunner
+            let syndicate: Syndicate
+            let runner: Runner
         }
         return try JSONDecoder().decode(CreateSyndicateResponse.self, from: data).syndicate
     }
 
-    func joinSyndicate(bettorId: Int, syndicateId: Int, password: String? = nil) async throws -> OddRunner {
+    func joinSyndicate(bettorId: Int, syndicateId: Int, password: String? = nil) async throws -> Runner {
         guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate/\(syndicateId)/join") else {
             throw URLError(.badURL)
         }
@@ -73,7 +50,7 @@ class LeagueService {
         if let http = response as? HTTPURLResponse, http.statusCode == 404 {
             throw SyndicateError.notFound
         }
-        return try JSONDecoder().decode(OddRunner.self, from: data)
+        return try JSONDecoder().decode(Runner.self, from: data)
     }
 }
 

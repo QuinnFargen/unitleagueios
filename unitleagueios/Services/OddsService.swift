@@ -2,7 +2,7 @@ import Foundation
 
 class OddsService {
     func fetchOddBest(gameId: Int? = nil, gameDt: String? = nil, leagueId: Int? = nil) async throws -> [Odds] {
-        var components = URLComponents(string: "\(APIClient.baseURL)/mart/odd_best")!
+        var components = URLComponents(string: "\(APIClient.baseURL)/mart/game_oddbest")!
         var queryItems: [URLQueryItem] = []
         if let gameId    { queryItems.append(URLQueryItem(name: "game_id",   value: "\(gameId)")) }
         if let gameDt    { queryItems.append(URLQueryItem(name: "game_dt",   value: gameDt)) }

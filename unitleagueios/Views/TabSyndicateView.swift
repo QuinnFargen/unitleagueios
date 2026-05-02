@@ -3,16 +3,15 @@ import SwiftUI
 struct TabSyndicateView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("userLeagues") private var userLeaguesData: Data = Data()
+    @AppStorage("bettorId") private var bettorId: Int = 0
+
+    @State private var syndicates: [Syndicate] = []
+    @State private var isLoading = false
+    @State private var fetchError: String?
     @State private var showingJoin = false
     @State private var showingCreate = false
 
-    @AppStorage("customUserName") private var customUserName: String = ""
-    @AppStorage("appleUserName")  private var appleUserName: String  = ""
-
-    private var userLeagues: [UserLeague] {
-        (try? JSONDecoder().decode([UserLeague].self, from: userLeaguesData)) ?? []
-    }
+    private let service = SyndicateService()
 
     var body: some View {
         NavigationStack {
@@ -30,27 +29,24 @@ struct TabSyndicateView: View {
                             }
                         }
 
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("My Career")
-                                .font(.headline)
+                        if isLoading {
+                            ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
+                        } else if let error = fetchError {
+                            Text(error)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            CareerCard(
-                                displayName: customUserName.isEmpty ? (appleUserName.isEmpty ? "Me" : appleUserName) : customUserName
-                            )
-                        }
-
-                        if !userLeagues.isEmpty {
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 40)
+                        } else if !syndicates.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Syndicates")
                                     .font(.headline)
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                                ForEach(userLeagues) { league in
-                                    NavigationLink(destination: ViewSyndicate(userLeague: league)) {
-                                        UserLeagueCard(userLeague: league)
+                                ForEach(syndicates) { syndicate in
+                                    NavigationLink(destination: ViewSyndicate(syndicate: syndicate)) {
+                                        SyndicateCard(syndicate: syndicate)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -63,56 +59,26 @@ struct TabSyndicateView: View {
                 }
             }
             .tabToolbar()
-            .sheet(isPresented: $showingJoin) {
-                JoinLeagueSheet { newLeague in
-                    append(newLeague)
-                }
+            .task { await load() }
+            .sheet(isPresented: $showingJoin, onDismiss: { Task { await load() } }) {
+                JoinSyndicateSheet(bettorId: bettorId)
             }
-            .sheet(isPresented: $showingCreate) {
-                CreateLeagueSheet { newLeague in
-                    append(newLeague)
-                }
+            .sheet(isPresented: $showingCreate, onDismiss: { Task { await load() } }) {
+                CreateSyndicateSheet(bettorId: bettorId)
             }
         }
     }
 
-    private func append(_ league: UserLeague) {
-        var current = userLeagues
-        current.append(league)
-        userLeaguesData = (try? JSONEncoder().encode(current)) ?? Data()
-    }
-}
-
-// MARK: - UserLeague model
-
-struct UserLeague: Codable, Identifiable {
-    let id: UUID
-    let leagueId: Int
-    let oddLeagueId: Int?
-    let abbr: String
-    let sport: String
-    let customName: String
-    let colorName: String
-
-    init(id: UUID, leagueId: Int, oddLeagueId: Int? = nil, abbr: String, sport: String, customName: String, colorName: String) {
-        self.id = id
-        self.leagueId = leagueId
-        self.oddLeagueId = oddLeagueId
-        self.abbr = abbr
-        self.sport = sport
-        self.customName = customName
-        self.colorName = colorName
-    }
-
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        id          = try c.decode(UUID.self,   forKey: .id)
-        leagueId    = try c.decode(Int.self,    forKey: .leagueId)
-        oddLeagueId = try? c.decode(Int.self,   forKey: .oddLeagueId)
-        abbr        = try c.decode(String.self, forKey: .abbr)
-        sport       = try c.decode(String.self, forKey: .sport)
-        customName  = try c.decode(String.self, forKey: .customName)
-        colorName   = (try? c.decode(String.self, forKey: .colorName)) ?? LeagueOption.colorNames[0]
+    private func load() async {
+        guard bettorId > 0 else { return }
+        isLoading = true
+        fetchError = nil
+        do {
+            syndicates = try await service.fetchSyndicate(bettorId: bettorId)
+        } catch {
+            fetchError = error.localizedDescription
+        }
+        isLoading = false
     }
 }
 
@@ -139,27 +105,35 @@ private struct LeagueActionButton: View {
     }
 }
 
-private struct UserLeagueCard: View {
+private struct SyndicateCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    let userLeague: UserLeague
+    let syndicate: Syndicate
 
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: League.sportIcon(for: userLeague.leagueId))
+            Image(systemName: syndicate.fantasy ? "sparkles" : "person.3.fill")
                 .font(.title2)
-                .foregroundStyle(ProfileOption.color(for: userLeague.colorName))
+                .foregroundStyle(theme.accent)
                 .frame(width: 44, height: 44)
                 .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(userLeague.abbr)
+                Text(syndicate.name)
                     .font(.headline)
                     .foregroundStyle(theme.primaryText(colorScheme))
-                Text(userLeague.customName)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+
+                Group {
+                    if let desc = syndicate.description {
+                        Text(desc)
+                    } else {
+                        Text("ID \(syndicate.syndicateId)\(syndicate.fantasy ? " · Fantasy" : "")")
+                    }
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
 
             Spacer()
@@ -174,90 +148,32 @@ private struct UserLeagueCard: View {
     }
 }
 
-private struct CareerCard: View {
-    @EnvironmentObject private var theme: AppTheme
-    @Environment(\.colorScheme) private var colorScheme
-    let displayName: String
-
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: "trophy.fill")
-                .font(.title2)
-                .foregroundStyle(theme.accent)
-                .frame(width: 44, height: 44)
-                .background(theme.cardBackground(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(displayName)
-                    .font(.headline)
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                Text("My Career")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .padding()
-        .background(theme.cardBackground(colorScheme))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
 // MARK: - Join Sheet
 
-private struct JoinLeagueSheet: View {
+private struct JoinSyndicateSheet: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    let onConfirm: (UserLeague) -> Void
+    let bettorId: Int
 
-    @AppStorage("bettorId") private var bettorId: Int = 0
-
-    @State private var leagueIdInput = ""
+    @State private var syndicateIdInput = ""
     @State private var password = ""
-    @State private var selectedSymbolId: Int = 1
-    @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    private let sportSymbols: [(id: Int, icon: String, label: String, sport: String)] = [
-        (1, "basketball",             "NBA",   "Basketball"),
-        (2, "american.football",      "NFL",   "Football"),
-        (3, "hockey.puck",            "NHL",   "Hockey"),
-        (4, "baseball",               "MLB",   "Baseball"),
-        (5, "american.football.fill", "NCAAF", "Coll. Football"),
-        (6, "basketball.fill",        "NCAAB", "Coll. Basketball"),
-    ]
-
-    private var selectedSport: (id: Int, icon: String, label: String, sport: String) {
-        sportSymbols.first { $0.id == selectedSymbolId } ?? sportSymbols[0]
-    }
-
-    private var oddLeagueId: Int? { Int(leagueIdInput.trimmingCharacters(in: .whitespaces)) }
+    private var syndicateId: Int? { Int(syndicateIdInput.trimmingCharacters(in: .whitespaces)) }
 
     private func join() {
-        guard let oddId = oddLeagueId else { return }
+        guard let id = syndicateId else { return }
         isLoading = true
         errorMessage = nil
         Task {
             do {
-                let runner = try await LeagueService().joinSyndicate(
+                _ = try await LeagueService().joinSyndicate(
                     bettorId: bettorId,
-                    syndicateId: oddId,
+                    syndicateId: id,
                     password: password.isEmpty ? nil : password
                 )
-                let sport = selectedSport
-                onConfirm(UserLeague(
-                    id: UUID(),
-                    leagueId: sport.id,
-                    oddLeagueId: runner.syndicateId,
-                    abbr: sport.label,
-                    sport: sport.sport,
-                    customName: "Syndicate \(runner.syndicateId)",
-                    colorName: selectedColorName
-                ))
                 dismiss()
             } catch {
                 errorMessage = error.localizedDescription
@@ -273,11 +189,11 @@ private struct JoinLeagueSheet: View {
 
                 Form {
                     Section("Syndicate ID") {
-                        TextField("Enter syndicate ID", text: $leagueIdInput)
+                        TextField("Enter syndicate ID", text: $syndicateIdInput)
                             .keyboardType(.numberPad)
                     }
 
-                    Section("Password") {
+                    Section("Password (optional)") {
                         SecureField("Enter password", text: $password)
                     }
 
@@ -287,62 +203,6 @@ private struct JoinLeagueSheet: View {
                                 .font(.caption)
                                 .foregroundStyle(theme.error)
                         }
-                    }
-
-                    Section("Symbol") {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 72))], spacing: 12) {
-                            ForEach(sportSymbols, id: \.id) { sport in
-                                Button {
-                                    selectedSymbolId = sport.id
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        Image(systemName: sport.icon)
-                                            .font(.title2)
-                                            .foregroundStyle(selectedSymbolId == sport.id ? theme.accent : theme.primaryText(colorScheme))
-                                            .frame(width: 48, height: 48)
-                                            .background(selectedSymbolId == sport.id ? theme.accent.opacity(0.15) : theme.cardBackground(colorScheme))
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(selectedSymbolId == sport.id ? theme.accent : Color.clear, lineWidth: 1.5)
-                                            )
-                                        Text(sport.label)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 6)
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                    }
-
-                    Section("Your Color") {
-                        HStack(spacing: 16) {
-                            ForEach(AccentOption.allCases) { option in
-                                Button {
-                                    selectedColorName = option.rawValue
-                                } label: {
-                                    Circle()
-                                        .fill(option.color)
-                                        .frame(width: 36, height: 36)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(theme.primaryText(colorScheme),
-                                                        lineWidth: selectedColorName == option.rawValue ? 2.5 : 0)
-                                        )
-                                        .shadow(
-                                            color: option.color.opacity(selectedColorName == option.rawValue ? 0.6 : 0),
-                                            radius: 6
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                        .listRowBackground(Color.clear)
                     }
                 }
                 .scrollContentBackground(.hidden)
@@ -357,7 +217,7 @@ private struct JoinLeagueSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Join") { join() }
-                        .disabled(oddLeagueId == nil || isLoading)
+                        .disabled(syndicateId == nil || isLoading)
                         .tint(theme.accent)
                 }
                 ToolbarItem(placement: .cancellationAction) {
@@ -370,67 +230,31 @@ private struct JoinLeagueSheet: View {
 
 // MARK: - Create Sheet
 
-private struct CreateLeagueSheet: View {
+private struct CreateSyndicateSheet: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    let onConfirm: (UserLeague) -> Void
+    let bettorId: Int
 
-    @AppStorage("bettorId") private var bettorId: Int = 0
-
-    @State private var martLeagues: [League] = []
-    @State private var isFetchingLeagues = false
-    @State private var fetchError: String?
-    @State private var selectedLeagueId: Int?
-
-    @State private var leagueName = ""
-    @State private var selectedColorName: String = AccentOption.allCases[0].rawValue
+    @State private var name = ""
+    @State private var description = ""
+    @State private var fantasy = false
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
-    @AppStorage("leagueColorName") private var leagueColorName: String = AccentOption.allCases[0].rawValue
-
-    private let service = LeagueService()
-
-    private var selectedLeague: League? {
-        martLeagues.first { $0.id == selectedLeagueId }
-    }
-
-    private func fetchLeagues() {
-        isFetchingLeagues = true
-        fetchError = nil
-        Task {
-            do {
-                martLeagues = try await service.fetchLeagues()
-            } catch {
-                fetchError = error.localizedDescription
-            }
-            isFetchingLeagues = false
-        }
-    }
+    private var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private func create() {
-        guard let league = selectedLeague else { return }
         isLoading = true
         errorMessage = nil
         Task {
             do {
-                let oddSyndicate = try await service.createSyndicate(
+                _ = try await LeagueService().createSyndicate(
                     bettorId: bettorId,
-                    name: leagueName.trimmingCharacters(in: .whitespaces)
+                    name: name.trimmingCharacters(in: .whitespaces),
+                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
+                    fantasy: fantasy
                 )
-                leagueSymbol    = League.sportIcon(for: league.id)
-                leagueColorName = selectedColorName
-                onConfirm(UserLeague(
-                    id: UUID(),
-                    leagueId: league.id,
-                    oddLeagueId: oddSyndicate.syndicateId,
-                    abbr: league.abbr,
-                    sport: league.sport,
-                    customName: leagueName.trimmingCharacters(in: .whitespaces),
-                    colorName: selectedColorName
-                ))
                 dismiss()
             } catch {
                 errorMessage = error.localizedDescription
@@ -445,38 +269,17 @@ private struct CreateLeagueSheet: View {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
                 Form {
-                    Section("Select Sport") {
-                        if isFetchingLeagues {
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                Text("Loading leagues...")
-                                    .foregroundStyle(.secondary)
-                            }
-                        } else if let error = fetchError {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(error)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Button("Retry") { fetchLeagues() }
-                                    .font(.caption)
-                            }
-                        } else if martLeagues.isEmpty {
-                            Text("No leagues available")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(martLeagues) { league in
-                                LeagueOptionRow(
-                                    league: league,
-                                    isSelected: selectedLeagueId == league.id
-                                ) {
-                                    selectedLeagueId = league.id
-                                }
-                            }
-                        }
+                    Section("Name") {
+                        TextField("Syndicate name", text: $name)
                     }
 
-                    Section("League Name") {
-                        TextField("Enter a name", text: $leagueName)
+                    Section("Description (optional)") {
+                        TextField("Add a description", text: $description)
+                    }
+
+                    Section {
+                        Toggle("Fantasy", isOn: $fantasy)
+                            .tint(theme.accent)
                     }
 
                     if let error = errorMessage {
@@ -485,32 +288,6 @@ private struct CreateLeagueSheet: View {
                                 .font(.caption)
                                 .foregroundStyle(theme.error)
                         }
-                    }
-
-                    Section("Your Color") {
-                        HStack(spacing: 16) {
-                            ForEach(AccentOption.allCases) { option in
-                                Button {
-                                    selectedColorName = option.rawValue
-                                } label: {
-                                    Circle()
-                                        .fill(option.color)
-                                        .frame(width: 36, height: 36)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(theme.primaryText(colorScheme),
-                                                        lineWidth: selectedColorName == option.rawValue ? 2.5 : 0)
-                                        )
-                                        .shadow(
-                                            color: option.color.opacity(selectedColorName == option.rawValue ? 0.6 : 0),
-                                            radius: 6
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                        .listRowBackground(Color.clear)
                     }
                 }
                 .scrollContentBackground(.hidden)
@@ -522,11 +299,10 @@ private struct CreateLeagueSheet: View {
             }
             .navigationTitle("Create Syndicate")
             .navigationBarTitleDisplayMode(.inline)
-            .task { fetchLeagues() }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") { create() }
-                        .disabled(selectedLeagueId == nil || leagueName.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
+                        .disabled(!isValid || isLoading)
                         .tint(theme.accent)
                 }
                 ToolbarItem(placement: .cancellationAction) {
@@ -534,44 +310,6 @@ private struct CreateLeagueSheet: View {
                 }
             }
         }
-    }
-}
-
-private struct LeagueOptionRow: View {
-    @EnvironmentObject private var theme: AppTheme
-    @Environment(\.colorScheme) private var colorScheme
-    let league: League
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: League.sportIcon(for: league.id))
-                    .font(.title3)
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                    .frame(width: 36, height: 36)
-                    .background(theme.cardBackground(colorScheme))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(league.abbr)
-                        .font(.headline)
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                    Text(league.name)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(theme.accent)
-                }
-            }
-        }
-        .buttonStyle(.plain)
     }
 }
 
