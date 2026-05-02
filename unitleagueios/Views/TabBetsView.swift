@@ -325,16 +325,16 @@ private struct OddBestCard: View {
             return SingleData(
                 awayPrice: odd.sprAwayPrice,
                 awayBetLabel: odd.sprAwayPoints.map(formatPoints) ?? "",
-                awayMLPct: impliedPct(odd.mlAwayPrice),
+                awayMLPct: impliedPct(odd.sprAwayPrice),
                 homePrice: odd.sprHomePrice,
                 homeBetLabel: odd.sprHomePoints.map(formatPoints) ?? "",
-                homeMLPct: impliedPct(odd.mlHomePrice)
+                homeMLPct: impliedPct(odd.sprHomePrice)
             )
         case "O/U":
             let total = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
             return SingleData(
-                awayPrice: odd.overPrice, awayBetLabel: "O \(total)", awayMLPct: "",
-                homePrice: odd.underPrice, homeBetLabel: "U \(total)", homeMLPct: ""
+                awayPrice: odd.overPrice, awayBetLabel: "O \(total)", awayMLPct: impliedPct(odd.overPrice),
+                homePrice: odd.underPrice, homeBetLabel: "U \(total)", homeMLPct: impliedPct(odd.underPrice)
             )
         default:
             return SingleData(awayPrice: nil, awayBetLabel: "", awayMLPct: "",
@@ -351,19 +351,20 @@ private struct OddBestCard: View {
                 .foregroundStyle(theme.primaryText(colorScheme))
                 .frame(width: 28)
 
-            priceCapsule(d.awayPrice)
-
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(spacing: 2) {
+                priceCapsule(d.awayPrice)
                 if !d.awayBetLabel.isEmpty {
                     Text(d.awayBetLabel)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                }
-                if !d.awayMLPct.isEmpty {
-                    Text(d.awayMLPct).font(.caption2).foregroundStyle(.secondary)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .frame(minWidth: 32, alignment: .trailing)
+
+            if !d.awayMLPct.isEmpty {
+                Text(d.awayMLPct)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
 
             VStack(spacing: 2) {
                 Text(odd.awayAbbr + " @ " + odd.homeAbbr)
@@ -376,19 +377,20 @@ private struct OddBestCard: View {
             }
             .frame(maxWidth: .infinity)
 
-            VStack(alignment: .leading, spacing: 2) {
+            if !d.homeMLPct.isEmpty {
+                Text(d.homeMLPct)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 2) {
+                priceCapsule(d.homePrice)
                 if !d.homeBetLabel.isEmpty {
                     Text(d.homeBetLabel)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                }
-                if !d.homeMLPct.isEmpty {
-                    Text(d.homeMLPct).font(.caption2).foregroundStyle(.secondary)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .frame(minWidth: 32, alignment: .leading)
-
-            priceCapsule(d.homePrice)
         }
     }
 }
