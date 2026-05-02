@@ -29,6 +29,14 @@ struct TabBetsView: View {
     private var fetchKey: String { "\(dateKey)-\(selectedLeagueId ?? 0)" }
     private var leaguesWithOdds: Set<Int> { Set(allOdds.map(\.leagueId)) }
 
+    private var filteredOdds: [OddBest] {
+        switch selectedBetType {
+        case "SPR": return odds.filter { $0.sprAwayPrice != nil && $0.sprHomePrice != nil }
+        case "O/U": return odds.filter { $0.overPrice != nil && $0.underPrice != nil }
+        default: return odds
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -92,7 +100,7 @@ struct TabBetsView: View {
                             }
                             .padding()
                             Spacer()
-                        } else if odds.isEmpty {
+                        } else if filteredOdds.isEmpty {
                             Spacer()
                             Text("No odds available")
                                 .foregroundStyle(.secondary)
@@ -100,7 +108,7 @@ struct TabBetsView: View {
                         } else {
                             ScrollView {
                                 LazyVStack(spacing: 12) {
-                                    ForEach(odds) { odd in
+                                    ForEach(filteredOdds) { odd in
                                         OddBestCard(odd: odd, betType: selectedBetType)
                                     }
                                 }
@@ -187,6 +195,11 @@ private struct OddBestCard: View {
         points == points.rounded() ? "\(Int(points))" : String(format: "%.1f", points)
     }
 
+    private func impliedPct(_ price: Double?) -> String {
+        guard let p = price, p > 0 else { return "" }
+        return "\(Int((1.0 / p * 100.0).rounded()))%"
+    }
+
     private func oddsCapsuleColor(_ price: Double) -> Color {
         let distance = min(abs(price - 2.0) * 0.5, 0.85)
         let base = price < 2.0 ? theme.win : theme.loss
@@ -235,84 +248,147 @@ private struct OddBestCard: View {
     @ViewBuilder
     private var allModeLayout: some View {
         let ouTotal = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
-        VStack(alignment: .leading, spacing: 6) {
-            // Header row: time + column labels
-            HStack(spacing: 0) {
-                if let time = formattedTime {
-                    Text(time)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
-                    Text(h)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: colW, alignment: .center)
-                }
-            }
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: odd.sportIcon)
+                .font(.title)
+                .foregroundStyle(theme.primaryText(colorScheme))
+                .frame(width: 34)
 
-            // Sport icon + team rows
-            HStack(alignment: .center, spacing: 10) {
-                Image(systemName: odd.sportIcon)
-                    .font(.title)
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                    .frame(width: 34)
+            VStack(alignment: .leading, spacing: 6) {
+                // Header inside VStack so labels align naturally with capsules below
+                HStack(spacing: 4) {
+                    if let time = formattedTime {
+                        Text(time)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
+                        Text(h)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: colW, alignment: .center)
+                    }
+                }
 
-                VStack(spacing: 6) {
-                    // Away row
-                    HStack(spacing: 4) {
+                // Away row — invisible "@ " prefix aligns abbr with home row
+                HStack(spacing: 4) {
+                    HStack(spacing: 0) {
+                        Text("@ ").opacity(0)
                         Text(odd.awayAbbr)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        priceCapsule(odd.mlAwayPrice)
-                        priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "")
-                        priceCapsule(awayIsFav ? odd.underPrice : odd.overPrice, subtitle: ouTotal)
                     }
-                    // Home row
-                    HStack(spacing: 4) {
-                        Text("@ " + odd.homeAbbr)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        priceCapsule(odd.mlHomePrice)
-                        priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "")
-                        priceCapsule(awayIsFav ? odd.overPrice : odd.underPrice, subtitle: ouTotal)
-                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice))
+                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "")
+                    priceCapsule(
+                        awayIsFav ? odd.underPrice : odd.overPrice,
+                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)"
+                    )
+                }
+
+                // Home row
+                HStack(spacing: 4) {
+                    Text("@ " + odd.homeAbbr)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice))
+                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "")
+                    priceCapsule(
+                        awayIsFav ? odd.overPrice : odd.underPrice,
+                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)"
+                    )
                 }
             }
+        }
+    }
+
+    private struct SingleData {
+        let awayPrice: Double?
+        let awayBetLabel: String
+        let awayMLPct: String
+        let homePrice: Double?
+        let homeBetLabel: String
+        let homeMLPct: String
+    }
+
+    private func singleData() -> SingleData {
+        switch betType {
+        case "ML":
+            return SingleData(
+                awayPrice: odd.mlAwayPrice, awayBetLabel: "", awayMLPct: impliedPct(odd.mlAwayPrice),
+                homePrice: odd.mlHomePrice, homeBetLabel: "", homeMLPct: impliedPct(odd.mlHomePrice)
+            )
+        case "SPR":
+            return SingleData(
+                awayPrice: odd.sprAwayPrice,
+                awayBetLabel: odd.sprAwayPoints.map(formatPoints) ?? "",
+                awayMLPct: impliedPct(odd.mlAwayPrice),
+                homePrice: odd.sprHomePrice,
+                homeBetLabel: odd.sprHomePoints.map(formatPoints) ?? "",
+                homeMLPct: impliedPct(odd.mlHomePrice)
+            )
+        case "O/U":
+            let total = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
+            return SingleData(
+                awayPrice: odd.overPrice, awayBetLabel: "O \(total)", awayMLPct: "",
+                homePrice: odd.underPrice, homeBetLabel: "U \(total)", homeMLPct: ""
+            )
+        default:
+            return SingleData(awayPrice: nil, awayBetLabel: "", awayMLPct: "",
+                              homePrice: nil, homeBetLabel: "", homeMLPct: "")
         }
     }
 
     @ViewBuilder
     private var singleModeLayout: some View {
-        let v = singleValues()
+        let d = singleData()
         HStack(spacing: 8) {
-            priceCapsule(v.0, subtitle: v.1)
-            Text(odd.awayAbbr + " @ " + odd.homeAbbr)
-                .font(.subheadline.weight(.semibold))
+            Image(systemName: odd.sportIcon)
+                .font(.title2)
                 .foregroundStyle(theme.primaryText(colorScheme))
-                .frame(maxWidth: .infinity, alignment: .center)
-                .multilineTextAlignment(.center)
-            priceCapsule(v.2, subtitle: v.3)
-        }
-    }
+                .frame(width: 28)
 
-    private func singleValues() -> (Double?, String, Double?, String) {
-        switch betType {
-        case "ML":
-            return (odd.mlAwayPrice, "", odd.mlHomePrice, "")
-        case "SPR":
-            return (
-                odd.sprAwayPrice, odd.sprAwayPoints.map(formatPoints) ?? "",
-                odd.sprHomePrice, odd.sprHomePoints.map(formatPoints) ?? ""
-            )
-        case "O/U":
-            let total = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
-            return (odd.overPrice, "O \(total)", odd.underPrice, "U \(total)")
-        default:
-            return (nil, "", nil, "")
+            priceCapsule(d.awayPrice)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                if !d.awayBetLabel.isEmpty {
+                    Text(d.awayBetLabel)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                }
+                if !d.awayMLPct.isEmpty {
+                    Text(d.awayMLPct).font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .frame(minWidth: 32, alignment: .trailing)
+
+            VStack(spacing: 2) {
+                Text(odd.awayAbbr + " @ " + odd.homeAbbr)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                    .multilineTextAlignment(.center)
+                if let time = formattedTime {
+                    Text(time).font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 2) {
+                if !d.homeBetLabel.isEmpty {
+                    Text(d.homeBetLabel)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                }
+                if !d.homeMLPct.isEmpty {
+                    Text(d.homeMLPct).font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .frame(minWidth: 32, alignment: .leading)
+
+            priceCapsule(d.homePrice)
         }
     }
 }
