@@ -237,69 +237,66 @@ private struct OddBestCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Game header
+        let colW: CGFloat = 52
+        let awayIsFav = (odd.sprAwayPoints ?? 1) < 0
+        let spreadPts = awayIsFav ? odd.sprAwayPoints : odd.sprHomePoints
+        let ouTotal = odd.overPoints ?? odd.underPoints
+        let awayAnnotation: String = {
+            if awayIsFav, let pts = spreadPts { return " (\(formatPoints(pts)))" }
+            if !awayIsFav, let total = ouTotal { return " (\(formatPoints(total)))" }
+            return ""
+        }()
+        let homeAnnotation: String = {
+            if !awayIsFav, let pts = spreadPts { return " (\(formatPoints(pts)))" }
+            if awayIsFav, let total = ouTotal { return " (\(formatPoints(total)))" }
+            return ""
+        }()
+
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(odd.awayAbbr) @ \(odd.homeAbbr)")
-                    .font(.headline)
-                    .foregroundStyle(theme.primaryText(colorScheme))
                 Spacer()
                 if let time = formattedTime {
                     Text(time)
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            if odd.hasActiveBets {
-                Divider().background(theme.divider(colorScheme))
-
-                // Moneyline
-                if odd.mlHomeBetHash != nil || odd.mlAwayBetHash != nil {
-                    OddsRow(
-                        label: "ML",
-                        awayValue: odd.mlAwayPrice.map(formatPrice),
-                        homeValue: odd.mlHomePrice.map(formatPrice),
-                        awayPoints: nil,
-                        homePoints: nil,
-                        bookmaker: odd.mlHomeBookmaker ?? odd.mlAwayBookmaker,
-                        theme: theme,
-                        colorScheme: colorScheme
-                    )
+            HStack(spacing: 0) {
+                Spacer()
+                ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
+                    Text(h)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: colW, alignment: .center)
                 }
-
-                // Spread
-                if odd.sprHomeBetHash != nil || odd.sprAwayBetHash != nil {
-                    OddsRow(
-                        label: "SPR",
-                        awayValue: odd.sprAwayPrice.map(formatPrice),
-                        homeValue: odd.sprHomePrice.map(formatPrice),
-                        awayPoints: odd.sprAwayPoints.map(formatPoints),
-                        homePoints: odd.sprHomePoints.map(formatPoints),
-                        bookmaker: odd.sprHomeBookmaker ?? odd.sprAwayBookmaker,
-                        theme: theme,
-                        colorScheme: colorScheme
-                    )
-                }
-
-                // Over/Under
-                if odd.overBetHash != nil || odd.underBetHash != nil {
-                    OddsRow(
-                        label: "O/U",
-                        awayValue: odd.overPrice.map(formatPrice),
-                        homeValue: odd.underPrice.map(formatPrice),
-                        awayPoints: odd.overPoints.map { "O \(formatPoints($0))" },
-                        homePoints: odd.underPoints.map { "U \(formatPoints($0))" },
-                        bookmaker: odd.overBookmaker ?? odd.underBookmaker,
-                        theme: theme,
-                        colorScheme: colorScheme
-                    )
-                }
-            } else {
-                Text("No odds available")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
+
+            HStack(spacing: 0) {
+                Text(odd.awayAbbr + awayAnnotation)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(odd.mlAwayPrice.map(formatPrice) ?? "—")
+                    .frame(width: colW, alignment: .center)
+                Text(odd.sprAwayPrice.map(formatPrice) ?? "—")
+                    .frame(width: colW, alignment: .center)
+                Text((awayIsFav ? odd.underPrice : odd.overPrice).map(formatPrice) ?? "—")
+                    .frame(width: colW, alignment: .center)
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(theme.primaryText(colorScheme))
+
+            HStack(spacing: 0) {
+                Text("@ " + odd.homeAbbr + homeAnnotation)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(odd.mlHomePrice.map(formatPrice) ?? "—")
+                    .frame(width: colW, alignment: .center)
+                Text(odd.sprHomePrice.map(formatPrice) ?? "—")
+                    .frame(width: colW, alignment: .center)
+                Text((!awayIsFav ? odd.underPrice : odd.overPrice).map(formatPrice) ?? "—")
+                    .frame(width: colW, alignment: .center)
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(theme.primaryText(colorScheme))
         }
         .padding()
         .background(theme.cardBackground(colorScheme))
@@ -312,58 +309,6 @@ private struct OddBestCard: View {
 
     private func formatPoints(_ points: Double) -> String {
         points == points.rounded() ? "\(Int(points))" : String(format: "%.1f", points)
-    }
-}
-
-// MARK: - OddsRow
-
-private struct OddsRow: View {
-    let label: String
-    let awayValue: String?
-    let homeValue: String?
-    let awayPoints: String?
-    let homePoints: String?
-    let bookmaker: String?
-    let theme: AppTheme
-    let colorScheme: ColorScheme
-
-    var body: some View {
-        HStack(spacing: 0) {
-            Text(label)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 36, alignment: .leading)
-
-            HStack {
-                VStack(alignment: .leading, spacing: 1) {
-                    if let pts = awayPoints {
-                        Text(pts)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text(awayValue ?? "—")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                }
-                Spacer()
-                if let book = bookmaker {
-                    Text(book)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 1) {
-                    if let pts = homePoints {
-                        Text(pts)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text(homeValue ?? "—")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                }
-            }
-        }
     }
 }
 

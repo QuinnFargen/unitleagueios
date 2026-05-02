@@ -150,12 +150,15 @@ private struct LeagueOptionCell: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(theme.accent)
-                .frame(width: 32, height: 32)
-                .background(theme.appBackground(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(theme.appBackground(colorScheme))
+                    .frame(width: 32, height: 32)
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(theme.accent)
+            }
+            .frame(width: 32, height: 32)
 
             Text(title)
                 .font(.subheadline.weight(.semibold))
