@@ -109,7 +109,19 @@ struct TabBetsView: View {
                             ScrollView {
                                 LazyVStack(spacing: 12) {
                                     ForEach(filteredOdds) { odd in
-                                        OddBestCard(odd: odd, betType: selectedBetType)
+                                        NavigationLink {
+                                            ViewGameDetail(
+                                                gameId: odd.gameId,
+                                                home: odd.homeAbbr,
+                                                away: odd.awayAbbr,
+                                                homeTeamId: odd.homeTeamId,
+                                                awayTeamId: odd.awayTeamId,
+                                                leagueId: odd.leagueId
+                                            )
+                                        } label: {
+                                            OddBestCard(odd: odd, betType: selectedBetType)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                                 .padding(.horizontal)
