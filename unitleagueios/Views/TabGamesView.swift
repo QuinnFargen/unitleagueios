@@ -113,7 +113,19 @@ struct TabGamesView: View {
                             ScrollView {
                                 LazyVStack(spacing: 12) {
                                     ForEach(displayedGames) { game in
-                                        GameCard(game: game)
+                                        NavigationLink {
+                                            ViewGameDetail(
+                                                gameId: game.id,
+                                                home: game.home,
+                                                away: game.away,
+                                                homeTeamId: game.homeTeamId,
+                                                awayTeamId: game.awayTeamId,
+                                                leagueId: game.leagueId
+                                            )
+                                        } label: {
+                                            GameCard(game: game)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                                 .padding(.horizontal)
