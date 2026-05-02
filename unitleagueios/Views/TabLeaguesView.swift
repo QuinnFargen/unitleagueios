@@ -243,15 +243,19 @@ private struct JoinLeagueSheet: View {
         errorMessage = nil
         Task {
             do {
-                let bbl = try await LeagueService().joinLeague(bettorId: bettorId, oddLeagueId: oddId)
+                let runner = try await LeagueService().joinSyndicate(
+                    bettorId: bettorId,
+                    syndicateId: oddId,
+                    password: password.isEmpty ? nil : password
+                )
                 let sport = selectedSport
                 onConfirm(UserLeague(
                     id: UUID(),
                     leagueId: sport.id,
-                    oddLeagueId: bbl.leagueId,
+                    oddLeagueId: runner.syndicateId,
                     abbr: sport.label,
                     sport: sport.sport,
-                    customName: "League \(bbl.leagueId)",
+                    customName: "Syndicate \(runner.syndicateId)",
                     colorName: selectedColorName
                 ))
                 dismiss()
@@ -268,8 +272,8 @@ private struct JoinLeagueSheet: View {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
                 Form {
-                    Section("League ID") {
-                        TextField("Enter league ID", text: $leagueIdInput)
+                    Section("Syndicate ID") {
+                        TextField("Enter syndicate ID", text: $leagueIdInput)
                             .keyboardType(.numberPad)
                     }
 
@@ -348,7 +352,7 @@ private struct JoinLeagueSheet: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("Join League")
+            .navigationTitle("Join Syndicate")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -412,7 +416,7 @@ private struct CreateLeagueSheet: View {
         errorMessage = nil
         Task {
             do {
-                let oddLeague = try await service.createLeague(
+                let oddSyndicate = try await service.createSyndicate(
                     bettorId: bettorId,
                     name: leagueName.trimmingCharacters(in: .whitespaces)
                 )
@@ -421,7 +425,7 @@ private struct CreateLeagueSheet: View {
                 onConfirm(UserLeague(
                     id: UUID(),
                     leagueId: league.id,
-                    oddLeagueId: oddLeague.leagueId,
+                    oddLeagueId: oddSyndicate.syndicateId,
                     abbr: league.abbr,
                     sport: league.sport,
                     customName: leagueName.trimmingCharacters(in: .whitespaces),
@@ -516,7 +520,7 @@ private struct CreateLeagueSheet: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("Create League")
+            .navigationTitle("Create Syndicate")
             .navigationBarTitleDisplayMode(.inline)
             .task { fetchLeagues() }
             .toolbar {

@@ -1,25 +1,25 @@
 import Foundation
 
-struct OddLeague: Codable {
-    let leagueId: Int
+struct OddSyndicate: Codable {
+    let syndicateId: Int
     let name: String
 
     enum CodingKeys: String, CodingKey {
-        case leagueId = "league_id"
+        case syndicateId = "syndicate_id"
         case name
     }
 }
 
-struct OddBbl: Codable {
-    let bblId: Int
+struct OddRunner: Codable {
+    let runnerId: Int
     let bettorId: Int
-    let leagueId: Int
+    let syndicateId: Int
     let role: String
 
     enum CodingKeys: String, CodingKey {
-        case bblId = "bbl_id"
-        case bettorId = "bettor_id"
-        case leagueId = "league_id"
+        case runnerId    = "runner_id"
+        case bettorId    = "bettor_id"
+        case syndicateId = "syndicate_id"
         case role
     }
 }
@@ -33,8 +33,8 @@ class LeagueService {
         return try JSONDecoder().decode([League].self, from: data)
     }
 
-    func createLeague(bettorId: Int, name: String, description: String? = nil, fantasy: Bool = false) async throws -> OddLeague {
-        guard let url = URL(string: "\(APIClient.baseURL)/odd/league") else {
+    func createSyndicate(bettorId: Int, name: String, description: String? = nil, fantasy: Bool = false) async throws -> OddSyndicate {
+        guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate") else {
             throw URLError(.badURL)
         }
         var request = URLRequest(url: url)
@@ -47,42 +47,44 @@ class LeagueService {
 
         let (data, _) = try await URLSession.shared.data(for: request)
 
-        struct CreateLeagueResponse: Codable {
-            let league: OddLeague
-            let membership: OddBbl
+        struct CreateSyndicateResponse: Codable {
+            let syndicate: OddSyndicate
+            let runner: OddRunner
         }
-        return try JSONDecoder().decode(CreateLeagueResponse.self, from: data).league
+        return try JSONDecoder().decode(CreateSyndicateResponse.self, from: data).syndicate
     }
 
-    func joinLeague(bettorId: Int, oddLeagueId: Int) async throws -> OddBbl {
-        guard let url = URL(string: "\(APIClient.baseURL)/odd/league/\(oddLeagueId)/join") else {
+    func joinSyndicate(bettorId: Int, syndicateId: Int, password: String? = nil) async throws -> OddRunner {
+        guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate/\(syndicateId)/join") else {
             throw URLError(.badURL)
         }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["bettor_id": bettorId])
+        var body: [String: Any] = ["bettor_id": bettorId]
+        if let pw = password { body["password"] = pw }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode == 409 {
-            throw LeagueError.alreadyMember
+            throw SyndicateError.alreadyMember
         }
         if let http = response as? HTTPURLResponse, http.statusCode == 404 {
-            throw LeagueError.notFound
+            throw SyndicateError.notFound
         }
-        return try JSONDecoder().decode(OddBbl.self, from: data)
+        return try JSONDecoder().decode(OddRunner.self, from: data)
     }
 }
 
-enum LeagueError: LocalizedError {
+enum SyndicateError: LocalizedError {
     case alreadyMember
     case notFound
 
     var errorDescription: String? {
         switch self {
-        case .alreadyMember: return "You're already a member of this league."
-        case .notFound:      return "League not found. Check the ID and try again."
+        case .alreadyMember: return "You're already a member of this syndicate."
+        case .notFound:      return "Syndicate not found. Check the ID and try again."
         }
     }
 }
