@@ -11,40 +11,8 @@ struct TabGamesView: View {
     @State private var teams: [Team] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var showDatePicker = false
-
     private let gameService = GameService()
     private let teamService = TeamService()
-
-    private let displayFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEE, MMM d, yyyy"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private var selectedYear: Int {
-        Calendar.current.component(.year, from: selectedDate)
-    }
-
-    private var prevDayNumber: Int {
-        let prev = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-        return Calendar.current.component(.day, from: prev)
-    }
-
-    private var nextDayNumber: Int {
-        let next = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-        return Calendar.current.component(.day, from: next)
-    }
-
-    private var todayDayNumber: Int {
-        Calendar.current.component(.day, from: .now)
-    }
-
-    private var years: [Int] {
-        let current = Calendar.current.component(.year, from: .now)
-        return Array(2020...current + 1)
-    }
 
     private var fetchKey: String {
         "\(selectedDate.timeIntervalSince1970)-\(selectedLeagueId ?? 0)"
@@ -74,67 +42,7 @@ struct TabGamesView: View {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Date navigation row
-                    HStack(spacing: 12) {
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            HStack{
-                                Image(systemName: "chevron.left")
-                                    .font(.title3.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                                Image(systemName: "\(prevDayNumber).calendar")
-                                    .font(.title3.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                            }
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(theme.cardBackground(colorScheme))
-                        .clipShape(Capsule())
-
-                        Button {
-                            showDatePicker = true
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(displayFormatter.string(from: selectedDate))
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                        }
-                        .sheet(isPresented: $showDatePicker) {
-                            DatePickerSheet(selectedDate: $selectedDate)
-                        }
-
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            HStack{
-                                Image(systemName: "\(nextDayNumber).calendar")
-                                    .font(.title3.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                                Image(systemName: "chevron.right")
-                                    .font(.title3.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                            }
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(theme.cardBackground(colorScheme))
-                        .clipShape(Capsule())
-
-                        Button("Today") {
-                                selectedDate = .now
-                            }
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(theme.cardBackground(colorScheme))
-                            .clipShape(Capsule())
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
+                    DateNavigationHeader(selectedDate: $selectedDate)
 
                     // League filter
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -270,33 +178,6 @@ struct TabGamesView: View {
     }
 }
 
-// MARK: - FilterChip
-
-struct FilterChip: View {
-    @EnvironmentObject private var theme: AppTheme
-    @Environment(\.colorScheme) private var colorScheme
-    let label: String
-    let isSelected: Bool
-    var availabilityTint: Color? = nil
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? theme.chipSelectedFG(colorScheme) : theme.primaryText(colorScheme))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(isSelected ? theme.chipSelected(colorScheme) : theme.chipUnselected(colorScheme))
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .strokeBorder(availabilityTint ?? .clear, lineWidth: 1.5)
-                )
-        }
-    }
-}
-
 // MARK: - GameCard
 
 private struct GameCard: View {
@@ -369,38 +250,6 @@ private struct GameCard: View {
         .padding()
         .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
-// MARK: - DatePickerSheet
-
-private struct DatePickerSheet: View {
-    @EnvironmentObject private var theme: AppTheme
-    @Environment(\.colorScheme) private var colorScheme
-    @Binding var selectedDate: Date
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                theme.appBackground(colorScheme).ignoresSafeArea()
-                DatePicker(
-                    "",
-                    selection: $selectedDate,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
-                .tint(theme.accent)
-                .padding(.horizontal)
-            }
-            .navigationTitle("Select Date")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
     }
 }
 

@@ -7,9 +7,9 @@ struct TabBetsView: View {
     @State private var selectedLeagueId: Int? = nil
     @State private var selectedBetType: String = "ALL"
     @State private var odds: [OddBest] = []
+    @State private var allOdds: [OddBest] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var showDatePicker = false
 
     private let service = OddBestService()
 
@@ -25,24 +25,9 @@ struct TabBetsView: View {
         return f
     }()
 
-    private let displayFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEE, MMM d, yyyy"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private var prevDayNumber: Int {
-        let prev = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-        return Calendar.current.component(.day, from: prev)
-    }
-
-    private var nextDayNumber: Int {
-        let next = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-        return Calendar.current.component(.day, from: next)
-    }
-
-    private var fetchKey: String { "\(dateFormatter.string(from: selectedDate))-\(selectedLeagueId ?? 0)" }
+    private var dateKey: String { dateFormatter.string(from: selectedDate) }
+    private var fetchKey: String { "\(dateKey)-\(selectedLeagueId ?? 0)" }
+    private var leaguesWithOdds: Set<Int> { Set(allOdds.map(\.leagueId)) }
 
     var body: some View {
         NavigationStack {
@@ -50,61 +35,7 @@ struct TabBetsView: View {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Date navigation
-                    HStack(spacing: 12) {
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            HStack {
-                                Image(systemName: "chevron.left")
-                                    .font(.title3.weight(.semibold))
-                                Image(systemName: "\(prevDayNumber).calendar")
-                                    .font(.title3.weight(.semibold))
-                            }
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(theme.cardBackground(colorScheme))
-                        .clipShape(Capsule())
-
-                        Button {
-                            showDatePicker = true
-                        } label: {
-                            Text(displayFormatter.string(from: selectedDate))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(theme.primaryText(colorScheme))
-                        }
-                        .sheet(isPresented: $showDatePicker) {
-                            BetsDatePickerSheet(selectedDate: $selectedDate)
-                        }
-
-                        Button {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                        } label: {
-                            HStack {
-                                Image(systemName: "\(nextDayNumber).calendar")
-                                    .font(.title3.weight(.semibold))
-                                Image(systemName: "chevron.right")
-                                    .font(.title3.weight(.semibold))
-                            }
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(theme.cardBackground(colorScheme))
-                        .clipShape(Capsule())
-
-                        Button("Today") { selectedDate = .now }
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(theme.cardBackground(colorScheme))
-                            .clipShape(Capsule())
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
+                    DateNavigationHeader(selectedDate: $selectedDate)
 
                     // League filter
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -112,7 +43,8 @@ struct TabBetsView: View {
                             ForEach(leagues, id: \.label) { league in
                                 FilterChip(
                                     label: league.label,
-                                    isSelected: selectedLeagueId == league.id
+                                    isSelected: selectedLeagueId == league.id,
+                                    availabilityTint: leaguesWithOdds.contains(league.id) ? theme.win : theme.loss
                                 ) {
                                     selectedLeagueId = (selectedLeagueId == league.id) ? nil : league.id
                                 }
@@ -122,9 +54,10 @@ struct TabBetsView: View {
                         .padding(.vertical, 8)
                     }
 
+                    // Bet type filter
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(["ML", "SPR", "O/U", "ALL"], id: \.self) { betType in
+                            ForEach(["ALL", "ML", "SPR", "O/U"], id: \.self) { betType in
                                 FilterChip(
                                     label: betType,
                                     isSelected: selectedBetType == betType
@@ -168,7 +101,7 @@ struct TabBetsView: View {
                             ScrollView {
                                 LazyVStack(spacing: 12) {
                                     ForEach(odds) { odd in
-                                        OddBestCard(odd: odd)
+                                        OddBestCard(odd: odd, betType: selectedBetType)
                                     }
                                 }
                                 .padding(.horizontal)
@@ -194,6 +127,7 @@ struct TabBetsView: View {
             .tabToolbar()
         }
         .task(id: fetchKey) { await fetchOdds() }
+        .task(id: dateKey) { await fetchAllOdds() }
     }
 
     private func fetchOdds() async {
@@ -201,11 +135,15 @@ struct TabBetsView: View {
         errorMessage = nil
         odds = []
         do {
-            odds = try await service.fetchOddBest(gameDt: dateFormatter.string(from: selectedDate), leagueId: selectedLeagueId)
+            odds = try await service.fetchOddBest(gameDt: dateKey, leagueId: selectedLeagueId)
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func fetchAllOdds() async {
+        allOdds = (try? await service.fetchOddBest(gameDt: dateKey, leagueId: nil)) ?? []
     }
 }
 
@@ -215,6 +153,9 @@ private struct OddBestCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let odd: OddBest
+    let betType: String
+
+    private let colW: CGFloat = 58
 
     private let timeInputFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -236,33 +177,72 @@ private struct OddBestCard: View {
         return timeOutputFormatter.string(from: date)
     }
 
-    var body: some View {
-        let colW: CGFloat = 52
-        let awayIsFav = (odd.sprAwayPoints ?? 1) < 0
-        let spreadPts = awayIsFav ? odd.sprAwayPoints : odd.sprHomePoints
-        let ouTotal = odd.overPoints ?? odd.underPoints
-        let awayAnnotation: String = {
-            if awayIsFav, let pts = spreadPts { return " (\(formatPoints(pts)))" }
-            if !awayIsFav, let total = ouTotal { return " (\(formatPoints(total)))" }
-            return ""
-        }()
-        let homeAnnotation: String = {
-            if !awayIsFav, let pts = spreadPts { return " (\(formatPoints(pts)))" }
-            if awayIsFav, let total = ouTotal { return " (\(formatPoints(total)))" }
-            return ""
-        }()
+    private var awayIsFav: Bool { (odd.sprAwayPoints ?? 1) < 0 }
 
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Spacer()
+    private func formatPrice(_ price: Double) -> String {
+        String(format: "%.2f", price)
+    }
+
+    private func formatPoints(_ points: Double) -> String {
+        points == points.rounded() ? "\(Int(points))" : String(format: "%.1f", points)
+    }
+
+    private func oddsCapsuleColor(_ price: Double) -> Color {
+        let distance = min(abs(price - 2.0) * 0.5, 0.85)
+        let base = price < 2.0 ? theme.win : theme.loss
+        return base.opacity(0.15 + distance)
+    }
+
+    @ViewBuilder
+    private func priceCapsule(_ price: Double?, subtitle: String = "") -> some View {
+        if let p = price {
+            VStack(spacing: 1) {
+                Text(formatPrice(p))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(width: colW)
+            .background(oddsCapsuleColor(p))
+            .clipShape(Capsule())
+        } else {
+            Text("—")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: colW)
+        }
+    }
+
+    var body: some View {
+        Group {
+            if betType == "ALL" {
+                allModeLayout
+            } else {
+                singleModeLayout
+            }
+        }
+        .padding()
+        .background(theme.cardBackground(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    @ViewBuilder
+    private var allModeLayout: some View {
+        let ouTotal = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
+        VStack(alignment: .leading, spacing: 6) {
+            // Header row: time + column labels
+            HStack(spacing: 0) {
                 if let time = formattedTime {
                     Text(time)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
-
-            HStack(spacing: 0) {
                 Spacer()
                 ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
                     Text(h)
@@ -272,70 +252,67 @@ private struct OddBestCard: View {
                 }
             }
 
-            HStack(spacing: 0) {
-                Text(odd.awayAbbr + awayAnnotation)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(odd.mlAwayPrice.map(formatPrice) ?? "—")
-                    .frame(width: colW, alignment: .center)
-                Text(odd.sprAwayPrice.map(formatPrice) ?? "—")
-                    .frame(width: colW, alignment: .center)
-                Text((awayIsFav ? odd.underPrice : odd.overPrice).map(formatPrice) ?? "—")
-                    .frame(width: colW, alignment: .center)
-            }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(theme.primaryText(colorScheme))
+            // Sport icon + team rows
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: odd.sportIcon)
+                    .font(.title)
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                    .frame(width: 34)
 
-            HStack(spacing: 0) {
-                Text("@ " + odd.homeAbbr + homeAnnotation)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(odd.mlHomePrice.map(formatPrice) ?? "—")
-                    .frame(width: colW, alignment: .center)
-                Text(odd.sprHomePrice.map(formatPrice) ?? "—")
-                    .frame(width: colW, alignment: .center)
-                Text((!awayIsFav ? odd.underPrice : odd.overPrice).map(formatPrice) ?? "—")
-                    .frame(width: colW, alignment: .center)
-            }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(theme.primaryText(colorScheme))
-        }
-        .padding()
-        .background(theme.cardBackground(colorScheme))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    private func formatPrice(_ price: Double) -> String {
-        String(format: "%.2f", price)
-    }
-
-    private func formatPoints(_ points: Double) -> String {
-        points == points.rounded() ? "\(Int(points))" : String(format: "%.1f", points)
-    }
-}
-
-// MARK: - DatePickerSheet
-
-private struct BetsDatePickerSheet: View {
-    @EnvironmentObject private var theme: AppTheme
-    @Environment(\.colorScheme) private var colorScheme
-    @Binding var selectedDate: Date
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                theme.appBackground(colorScheme).ignoresSafeArea()
-                DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .tint(theme.accent)
-                    .padding(.horizontal)
-            }
-            .navigationTitle("Select Date")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                VStack(spacing: 6) {
+                    // Away row
+                    HStack(spacing: 4) {
+                        Text(odd.awayAbbr)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(theme.primaryText(colorScheme))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        priceCapsule(odd.mlAwayPrice)
+                        priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "")
+                        priceCapsule(awayIsFav ? odd.underPrice : odd.overPrice, subtitle: ouTotal)
+                    }
+                    // Home row
+                    HStack(spacing: 4) {
+                        Text("@ " + odd.homeAbbr)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(theme.primaryText(colorScheme))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        priceCapsule(odd.mlHomePrice)
+                        priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "")
+                        priceCapsule(awayIsFav ? odd.overPrice : odd.underPrice, subtitle: ouTotal)
+                    }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var singleModeLayout: some View {
+        let v = singleValues()
+        HStack(spacing: 8) {
+            priceCapsule(v.0, subtitle: v.1)
+            Text(odd.awayAbbr + " @ " + odd.homeAbbr)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(theme.primaryText(colorScheme))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .multilineTextAlignment(.center)
+            priceCapsule(v.2, subtitle: v.3)
+        }
+    }
+
+    private func singleValues() -> (Double?, String, Double?, String) {
+        switch betType {
+        case "ML":
+            return (odd.mlAwayPrice, "", odd.mlHomePrice, "")
+        case "SPR":
+            return (
+                odd.sprAwayPrice, odd.sprAwayPoints.map(formatPoints) ?? "",
+                odd.sprHomePrice, odd.sprHomePoints.map(formatPoints) ?? ""
+            )
+        case "O/U":
+            let total = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
+            return (odd.overPrice, "O \(total)", odd.underPrice, "U \(total)")
+        default:
+            return (nil, "", nil, "")
         }
     }
 }

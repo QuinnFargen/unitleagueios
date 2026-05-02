@@ -46,6 +46,8 @@ struct OddBest: Codable, Identifiable {
     // Meta
     let lastUpdatedTs: String?
 
+    var sportIcon: String { League.sportIcon(for: leagueId) }
+
     enum CodingKeys: String, CodingKey {
         case gameId = "game_id"
         case gameConcat = "game_concat"
