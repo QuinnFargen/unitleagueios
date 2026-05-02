@@ -7,9 +7,9 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            TabLeaguesView()
+            TabSyndicateView()
                 .tabItem {
-                    Label("Leagues", systemImage: "person.3")
+                    Label("Syndicate", systemImage: "person.3")
                 }
                 .tag(0)
 

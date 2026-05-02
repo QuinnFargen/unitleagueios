@@ -1,6 +1,6 @@
 import Foundation
 
-struct OddBest: Codable, Identifiable {
+struct Odds: Codable, Identifiable {
     var id: Int { gameId }
     let gameId: Int
     let gameConcat: String

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ViewLeagueDetail: View {
+struct ViewSyndicate: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("userLeagues")      private var userLeaguesData: Data    = Data()

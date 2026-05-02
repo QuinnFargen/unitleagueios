@@ -11,12 +11,12 @@ struct ViewGameDetail: View {
     let awayTeamId: Int
     let leagueId: Int
 
-    @State private var odd: OddBest?
+    @State private var odd: Odds?
     @State private var homeTeam: Team?
     @State private var awayTeam: Team?
     @State private var league: League?
 
-    private let oddService = OddBestService()
+    private let oddService = OddsService()
     private let teamService = TeamService()
     private let leagueService = LeagueService()
 
@@ -80,7 +80,7 @@ struct ViewGameDetail: View {
 private struct GameOddsCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    let odd: OddBest
+    let odd: Odds
 
     private let colW: CGFloat = 58
 

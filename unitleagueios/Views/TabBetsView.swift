@@ -6,12 +6,12 @@ struct TabBetsView: View {
     @State private var selectedDate: Date = .now
     @State private var selectedLeagueId: Int? = nil
     @State private var selectedBetType: String = "ALL"
-    @State private var odds: [OddBest] = []
-    @State private var allOdds: [OddBest] = []
+    @State private var odds: [Odds] = []
+    @State private var allOdds: [Odds] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    private let service = OddBestService()
+    private let service = OddsService()
 
     private let leagues: [(label: String, id: Int)] = [
         ("NBA", 1), ("NFL", 2), ("NHL", 3),
@@ -29,7 +29,7 @@ struct TabBetsView: View {
     private var fetchKey: String { "\(dateKey)-\(selectedLeagueId ?? 0)" }
     private var leaguesWithOdds: Set<Int> { Set(allOdds.map(\.leagueId)) }
 
-    private var filteredOdds: [OddBest] {
+    private var filteredOdds: [Odds] {
         switch selectedBetType {
         case "SPR": return odds.filter { $0.sprAwayPrice != nil && $0.sprHomePrice != nil }
         case "O/U": return odds.filter { $0.overPrice != nil && $0.underPrice != nil }
@@ -172,7 +172,7 @@ struct TabBetsView: View {
 private struct OddBestCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    let odd: OddBest
+    let odd: Odds
     let betType: String
 
     private let colW: CGFloat = 58

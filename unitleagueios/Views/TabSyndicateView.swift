@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TabLeaguesView: View {
+struct TabSyndicateView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("userLeagues") private var userLeaguesData: Data = Data()
@@ -43,13 +43,13 @@ struct TabLeaguesView: View {
 
                         if !userLeagues.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("My Leagues")
+                                Text("Syndicates")
                                     .font(.headline)
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                 ForEach(userLeagues) { league in
-                                    NavigationLink(destination: ViewLeagueDetail(userLeague: league)) {
+                                    NavigationLink(destination: ViewSyndicate(userLeague: league)) {
                                         UserLeagueCard(userLeague: league)
                                     }
                                     .buttonStyle(.plain)
@@ -576,6 +576,6 @@ private struct LeagueOptionRow: View {
 }
 
 #Preview {
-    TabLeaguesView()
+    TabSyndicateView()
         .environmentObject(AppTheme())
 }
