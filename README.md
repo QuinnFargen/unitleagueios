@@ -48,11 +48,11 @@ All services use `async/await` and hit the base URL defined in `Services/APIClie
 | `Services/GameService.swift` | `fetchGames(date:leagueId:)` | `TabGamesView` |
 | `Services/OddsService.swift` | `fetchOddBest(gameId:gameDt:leagueId:)` | `TabBetsView`, `ViewGameDetail` |
 | `Services/TeamService.swift` | `fetchTeams(leagueId:)` | `TabGamesView`, `ViewGameDetail`, `ViewTeamList` |
-| `Services/LeagueService.swift` | `fetchLeagues()` `createSyndicate(...)` `joinSyndicate(...)` | `TabResearchView`, `TabSyndicateView`, `ViewGameDetail` |
+| `Services/LeagueService.swift` | `fetchLeagues()` | `TabResearchView`, `ViewGameDetail` |
 | `Services/SchedService.swift` | `fetchSchedule(teamId:leagueId:yr:)` | `ViewSched` |
 | `Services/BettorService.swift` | `createBettor(...)` `signin(bettorId:)` `updateProfile(...)` | `TabProfileView`, `MainTabView` |
 | `Services/RunnerService.swift` | `fetchRunner(bettorId:syndicateId:)` | `ViewSyndicate`, `TabSyndicateView` |
-| `Services/SyndicateService.swift` | `fetchSyndicate(syndicateId:bettorId:)` | `TabSyndicateView` |
+| `Services/SyndicateService.swift` | `fetchSyndicate(syndicateId:bettorId:)` `createSyndicate(...)` `joinSyndicate(...)` | `TabSyndicateView` |
 
 ---
 
@@ -74,7 +74,7 @@ All services use `async/await` and hit the base URL defined in `Services/APIClie
 | `Views/Tabs/TabGamesView.swift` | Browse games by date and league | `Game`, `Team` | `GameService`, `TeamService` | `ViewGameDetail` |
 | `Views/Tabs/TabBetsView.swift` | Browse best odds by date, league, bet type | `Odds` | `OddsService` | `ViewGameDetail` |
 | `Views/Tabs/TabResearchView.swift` | Explore leagues → teams → schedules | `League` | `LeagueService` | `ViewTeamList` |
-| `Views/Tabs/TabSyndicateView.swift` | Manage syndicates (view/join/create) | `Syndicate`, `Runner` | `SyndicateService`, `LeagueService`, `RunnerService` | `ViewSyndicate` |
+| `Views/Tabs/TabSyndicateView.swift` | Manage syndicates (view/join/create) | `Syndicate`, `Runner` | `SyndicateService`, `RunnerService` | `ViewSyndicate` |
 | `Views/Tabs/TabProfileView.swift` | Apple Sign-In, profile name/symbol/color | `Bettor` | `BettorService` | — |
 
 ### Component Views
@@ -123,8 +123,8 @@ TabResearchView → LeagueService.fetchLeagues()
 TabSyndicateView → SyndicateService.fetchSyndicate(bettorId)
                  → SyndicateCard → ViewSyndicate
                                    → RunnerService.fetchRunner(syndicateId)
-                 → JoinSyndicateSheet  → LeagueService.joinSyndicate()
-                 → CreateSyndicateSheet → LeagueService.createSyndicate()
+                 → JoinSyndicateSheet  → SyndicateService.joinSyndicate()
+                 → CreateSyndicateSheet → SyndicateService.createSyndicate()
 ```
 
 ---
