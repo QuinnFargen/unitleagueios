@@ -3,6 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("bettorId") private var bettorId: Int = 0
     @State private var selectedTab = 4
 
     var body: some View {
@@ -38,6 +39,10 @@ struct MainTabView: View {
                 .tag(4)
         }
         .tint(theme.accent)
+        .task {
+            guard bettorId > 0 else { return }
+            try? await BettorService().signin(bettorId: bettorId)
+        }
     }
 }
 
