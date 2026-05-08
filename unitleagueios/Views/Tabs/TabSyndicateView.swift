@@ -169,7 +169,7 @@ private struct JoinSyndicateSheet: View {
         errorMessage = nil
         Task {
             do {
-                _ = try await LeagueService().joinSyndicate(
+                _ = try await SyndicateService().joinSyndicate(
                     bettorId: bettorId,
                     syndicateId: id,
                     password: password.isEmpty ? nil : password
@@ -252,7 +252,7 @@ private struct CreateSyndicateSheet: View {
         errorMessage = nil
         Task {
             do {
-                _ = try await LeagueService().createSyndicate(
+                _ = try await SyndicateService().createSyndicate(
                     bettorId: bettorId,
                     name: name.trimmingCharacters(in: .whitespaces),
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
