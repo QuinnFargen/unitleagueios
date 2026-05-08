@@ -149,10 +149,10 @@ struct TabToolbar: ViewModifier {
                 .foregroundStyle(ProfileOption.color(for: leagueColorName))
 
                 HStack(spacing: 4) {
-                    Text(sampleRank)
+                    Text("2nd")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(theme.primaryText(colorScheme))
-                    Text(sampleDiff)
+                    Text("-15")
                         .font(.caption)
                         .foregroundStyle(theme.error)
                 }
