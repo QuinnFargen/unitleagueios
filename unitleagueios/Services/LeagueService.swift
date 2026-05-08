@@ -10,7 +10,7 @@ class LeagueService {
         return try JSONDecoder().decode([League].self, from: data)
     }
 
-    func createSyndicate(bettorId: Int, name: String, description: String? = nil, isPublic: Bool = false) async throws -> Syndicate {
+    func createSyndicate(bettorId: Int, name: String, description: String? = nil, isPublic: Bool = false, password: String? = nil, maxRunner: Int? = nil) async throws -> Syndicate {
         guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate") else {
             throw URLError(.badURL)
         }
@@ -20,6 +20,8 @@ class LeagueService {
 
         var body: [String: Any] = ["bettor_id": bettorId, "name": name, "is_public": isPublic]
         if let desc = description { body["description"] = desc }
+        if let pw = password { body["password"] = pw }
+        if let max = maxRunner { body["max_runner"] = max }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, _) = try await URLSession.shared.data(for: request)

@@ -8,9 +8,9 @@ struct Runner: Codable, Identifiable {
     let role: String
     let active: Bool
     let balance: Int
-    let profileName: String
-    let symbol: String
-    let color: String
+    let profileName: String?
+    let symbol: String?
+    let color: String?
 
     enum CodingKeys: String, CodingKey {
         case runnerId = "runner_id"

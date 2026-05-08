@@ -238,11 +238,14 @@ private struct CreateSyndicateSheet: View {
 
     @State private var name = ""
     @State private var description = ""
+    @State private var password = ""
+    @State private var maxRunnerInput = ""
     @State private var isPublic = false
     @State private var isLoading = false
     @State private var errorMessage: String?
 
     private var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var maxRunner: Int? { Int(maxRunnerInput.trimmingCharacters(in: .whitespaces)) }
 
     private func create() {
         isLoading = true
@@ -253,7 +256,9 @@ private struct CreateSyndicateSheet: View {
                     bettorId: bettorId,
                     name: name.trimmingCharacters(in: .whitespaces),
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    isPublic: isPublic
+                    isPublic: isPublic,
+                    password: password.isEmpty ? nil : password,
+                    maxRunner: maxRunner
                 )
                 dismiss()
             } catch {
@@ -275,6 +280,15 @@ private struct CreateSyndicateSheet: View {
 
                     Section("Description (optional)") {
                         TextField("Add a description", text: $description)
+                    }
+
+                    Section("Password (optional)") {
+                        SecureField("Set a password", text: $password)
+                    }
+
+                    Section("Max Members (optional)") {
+                        TextField("No limit", text: $maxRunnerInput)
+                            .keyboardType(.numberPad)
                     }
 
                     Section {
