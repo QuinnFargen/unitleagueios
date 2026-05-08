@@ -31,7 +31,7 @@ struct ViewSyndicate: View {
             ScrollView {
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
-                        Image(systemName: syndicate.fantasy ? "sparkles" : "person.3.fill")
+                        Image(systemName: syndicate.isPublic ? "sparkles" : "person.3.fill")
                             .font(.system(size: 40, weight: .semibold))
                             .foregroundStyle(theme.accent)
                             .padding(.top, 24)
@@ -46,7 +46,7 @@ struct ViewSyndicate: View {
                                 .foregroundStyle(.secondary)
                         }
 
-                        if syndicate.fantasy {
+                        if syndicate.isPublic {
                             Text("Fantasy")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(theme.accent)
