@@ -112,7 +112,7 @@ private struct SyndicateCard: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: syndicate.fantasy ? "sparkles" : "person.3.fill")
+            Image(systemName: syndicate.isPublic ? "globe" : "lock.fill")
                 .font(.title2)
                 .foregroundStyle(theme.accent)
                 .frame(width: 44, height: 44)
@@ -128,7 +128,7 @@ private struct SyndicateCard: View {
                     if let desc = syndicate.description {
                         Text(desc)
                     } else {
-                        Text("ID \(syndicate.syndicateId)\(syndicate.fantasy ? " · Fantasy" : "")")
+                        Text("ID \(syndicate.syndicateId)\(syndicate.isPublic ? " · Public" : " · Private")")
                     }
                 }
                 .font(.subheadline)
@@ -238,7 +238,7 @@ private struct CreateSyndicateSheet: View {
 
     @State private var name = ""
     @State private var description = ""
-    @State private var fantasy = false
+    @State private var isPublic = false
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -253,7 +253,7 @@ private struct CreateSyndicateSheet: View {
                     bettorId: bettorId,
                     name: name.trimmingCharacters(in: .whitespaces),
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    fantasy: fantasy
+                    isPublic: isPublic
                 )
                 dismiss()
             } catch {
@@ -278,7 +278,7 @@ private struct CreateSyndicateSheet: View {
                     }
 
                     Section {
-                        Toggle("Fantasy", isOn: $fantasy)
+                        Toggle("Public", isOn: $isPublic)
                             .tint(theme.accent)
                     }
 

@@ -10,7 +10,7 @@ class LeagueService {
         return try JSONDecoder().decode([League].self, from: data)
     }
 
-    func createSyndicate(bettorId: Int, name: String, description: String? = nil, fantasy: Bool = false) async throws -> Syndicate {
+    func createSyndicate(bettorId: Int, name: String, description: String? = nil, isPublic: Bool = false) async throws -> Syndicate {
         guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate") else {
             throw URLError(.badURL)
         }
@@ -18,7 +18,7 @@ class LeagueService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        var body: [String: Any] = ["bettor_id": bettorId, "name": name, "fantasy": fantasy]
+        var body: [String: Any] = ["bettor_id": bettorId, "name": name, "is_public": isPublic]
         if let desc = description { body["description"] = desc }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
