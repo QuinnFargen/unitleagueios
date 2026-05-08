@@ -122,12 +122,12 @@ private struct RunnerRow: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 28, alignment: .leading)
 
-            Image(systemName: runner.symbol)
+            Image(systemName: runner.symbol ?? "person.fill")
                 .font(.title2)
-                .foregroundStyle(ProfileOption.color(for: runner.color))
+                .foregroundStyle(ProfileOption.color(for: runner.color ?? ""))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(runner.profileName)
+                Text(runner.profileName ?? "Unknown")
                     .font(.body).fontWeight(isCurrentUser ? .semibold : .regular)
                     .foregroundStyle(theme.primaryText(colorScheme))
 
