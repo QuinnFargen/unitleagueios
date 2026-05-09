@@ -12,7 +12,7 @@ class SyndicateService {
         return try JSONDecoder().decode([Syndicate].self, from: data)
     }
 
-    func createSyndicate(bettorId: Int, name: String, description: String? = nil, fantasy: Bool = false, password: String? = nil, maxRunner: Int? = nil) async throws -> Syndicate {
+    func createSyndicate(bettorId: Int, name: String, description: String? = nil, isPublic: Bool = false, password: String? = nil, maxRunner: Int? = nil) async throws -> Syndicate {
         guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate") else {
             throw URLError(.badURL)
         }
@@ -20,7 +20,7 @@ class SyndicateService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        var body: [String: Any] = ["bettor_id": bettorId, "name": name, "fantasy": fantasy]
+        var body: [String: Any] = ["bettor_id": bettorId, "name": name, "is_public": isPublic]
         if let desc = description { body["description"] = desc }
         if let pw = password { body["password"] = pw }
         if let max = maxRunner { body["max_runner"] = max }

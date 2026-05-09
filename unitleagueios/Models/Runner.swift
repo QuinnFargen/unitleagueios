@@ -6,8 +6,8 @@ struct Runner: Codable, Identifiable {
     let bettorId: Int
     let syndicateId: Int
     let role: String
-    let active: Bool
-    let balance: Int
+    let active: Bool?
+    let balance: Int?
     let profileName: String?
     let symbol: String?
     let color: String?
