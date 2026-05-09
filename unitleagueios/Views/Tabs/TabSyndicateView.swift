@@ -118,7 +118,7 @@ private struct SyndicateCard: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: syndicate.fantasy ? "sportscourt" : "house.fill")
+            Image(systemName: syndicate.isPublic ? "sportscourt" : "house.fill")
                 .font(.title2)
                 .foregroundStyle(theme.accent)
                 .frame(width: 44, height: 44)
@@ -134,7 +134,7 @@ private struct SyndicateCard: View {
                     if let desc = syndicate.description {
                         Text(desc)
                     } else {
-                        Text("ID \(syndicate.syndicateId)\(syndicate.fantasy ? " · Fantasy" : " · Standard")")
+                        Text("ID \(syndicate.syndicateId)\(syndicate.isPublic ? " · Fantasy" : " · Standard")")
                     }
                 }
                 .font(.subheadline)
@@ -246,7 +246,7 @@ private struct CreateSyndicateSheet: View {
     @State private var description = ""
     @State private var password = ""
     @State private var maxRunnerInput = ""
-    @State private var fantasy = false
+    @State private var isPublic = false
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -262,7 +262,7 @@ private struct CreateSyndicateSheet: View {
                     bettorId: bettorId,
                     name: name.trimmingCharacters(in: .whitespaces),
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    fantasy: fantasy,
+                    isPublic: isPublic,
                     password: password.isEmpty ? nil : password,
                     maxRunner: maxRunner
                 )
@@ -298,7 +298,7 @@ private struct CreateSyndicateSheet: View {
                     }
 
                     Section {
-                        Toggle("Fantasy", isOn: $fantasy)
+                        Toggle("Fantasy", isOn: $isPublic)
                             .tint(theme.accent)
                     }
 
