@@ -29,6 +29,11 @@ struct TabSyndicateView: View {
                             }
                         }
 
+                        Text("bettor_id: \(bettorId)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
                         if isLoading {
                             ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
                         } else if let error = fetchError {
@@ -80,7 +85,9 @@ struct TabSyndicateView: View {
         isLoading = true
         fetchError = nil
         do {
-            syndicates = try await service.fetchSyndicate(bettorId: bettorId)
+            let raw = try await service.fetchSyndicate(bettorId: bettorId)
+            var seen = Set<Int>()
+            syndicates = raw.filter { seen.insert($0.syndicateId).inserted }
         } catch {
             fetchError = error.localizedDescription
         }
