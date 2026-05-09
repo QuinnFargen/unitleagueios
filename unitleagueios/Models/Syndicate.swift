@@ -5,7 +5,7 @@ struct Syndicate: Codable, Identifiable {
     let syndicateId: Int
     let name: String
     let description: String?
-    let isPublic: Bool
+    let fantasy: Bool
     let maxRunner: Int?
     let createdByBettorId: Int
 
@@ -13,7 +13,7 @@ struct Syndicate: Codable, Identifiable {
         case syndicateId = "syndicate_id"
         case name
         case description
-        case isPublic = "is_public"
+        case fantasy
         case maxRunner = "max_runner"
         case createdByBettorId = "created_by_bettor_id"
     }

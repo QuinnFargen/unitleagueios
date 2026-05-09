@@ -51,6 +51,12 @@ struct TabSyndicateView: View {
                                     .buttonStyle(.plain)
                                 }
                             }
+                        } else {
+                            Text("You're not in any syndicates yet.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 40)
                         }
                     }
                     .padding(.horizontal, 32)
@@ -112,7 +118,7 @@ private struct SyndicateCard: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: syndicate.isPublic ? "globe" : "lock.fill")
+            Image(systemName: syndicate.fantasy ? "sportscourt" : "house.fill")
                 .font(.title2)
                 .foregroundStyle(theme.accent)
                 .frame(width: 44, height: 44)
@@ -128,7 +134,7 @@ private struct SyndicateCard: View {
                     if let desc = syndicate.description {
                         Text(desc)
                     } else {
-                        Text("ID \(syndicate.syndicateId)\(syndicate.isPublic ? " · Public" : " · Private")")
+                        Text("ID \(syndicate.syndicateId)\(syndicate.fantasy ? " · Fantasy" : " · Standard")")
                     }
                 }
                 .font(.subheadline)
@@ -240,7 +246,7 @@ private struct CreateSyndicateSheet: View {
     @State private var description = ""
     @State private var password = ""
     @State private var maxRunnerInput = ""
-    @State private var isPublic = false
+    @State private var fantasy = false
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -256,7 +262,7 @@ private struct CreateSyndicateSheet: View {
                     bettorId: bettorId,
                     name: name.trimmingCharacters(in: .whitespaces),
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    isPublic: isPublic,
+                    fantasy: fantasy,
                     password: password.isEmpty ? nil : password,
                     maxRunner: maxRunner
                 )
@@ -292,7 +298,7 @@ private struct CreateSyndicateSheet: View {
                     }
 
                     Section {
-                        Toggle("Public", isOn: $isPublic)
+                        Toggle("Fantasy", isOn: $fantasy)
                             .tint(theme.accent)
                     }
 
