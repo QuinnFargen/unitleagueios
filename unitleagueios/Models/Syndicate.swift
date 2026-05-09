@@ -14,7 +14,23 @@ struct Syndicate: Codable, Identifiable {
         case name
         case description
         case isPublic = "is_public"
+        case fantasy
         case maxRunner = "max_runner"
         case createdByBettorId = "created_by_bettor_id"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        syndicateId = try c.decode(Int.self, forKey: .syndicateId)
+        name = try c.decode(String.self, forKey: .name)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        maxRunner = try c.decodeIfPresent(Int.self, forKey: .maxRunner)
+        createdByBettorId = try c.decode(Int.self, forKey: .createdByBettorId)
+        // mart endpoint sends "fantasy"; odd endpoint sends "is_public"
+        if let fantasy = try c.decodeIfPresent(Bool.self, forKey: .fantasy) {
+            isPublic = fantasy
+        } else {
+            isPublic = try c.decodeIfPresent(Bool.self, forKey: .isPublic) ?? false
+        }
     }
 }
