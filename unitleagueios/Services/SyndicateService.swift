@@ -35,8 +35,8 @@ class SyndicateService {
         return try JSONDecoder().decode(CreateSyndicateResponse.self, from: data).syndicate
     }
 
-    func joinSyndicate(bettorId: Int, syndicateId: Int, password: String? = nil) async throws -> Runner {
-        guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate/\(syndicateId)/join") else {
+    func joinSyndicate(bettorId: Int, code: String, password: String? = nil) async throws -> Runner {
+        guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate/join/\(code)") else {
             throw URLError(.badURL)
         }
         var request = URLRequest(url: url)
@@ -65,7 +65,7 @@ enum SyndicateError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyMember: return "You're already a member of this syndicate."
-        case .notFound:      return "Syndicate not found. Check the ID and try again."
+        case .notFound:      return "Syndicate not found. Check the code and try again."
         }
     }
 }
