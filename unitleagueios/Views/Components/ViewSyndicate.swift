@@ -157,7 +157,7 @@ private struct EditSyndicateSheet: View {
     init(syndicate: Binding<Syndicate>) {
         _syndicate = syndicate
         _nameInput = State(initialValue: syndicate.wrappedValue.name)
-        _selectedSymbol = State(initialValue: syndicate.wrappedValue.symbol ?? ProfileOption.symbols[0])
+        _selectedSymbol = State(initialValue: syndicate.wrappedValue.symbol ?? SyndicateOption.symbols[0])
         _selectedColor = State(initialValue: AccentOption(rawValue: syndicate.wrappedValue.color ?? "") ?? .green)
     }
 
@@ -205,6 +205,13 @@ private struct EditSyndicateSheet: View {
                             .buttonStyle(.plain)
                         }
 
+                        if let code = syndicate.code {
+                            Text("Join Syndicate Code: \(code)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 4)
+                        }
+
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Syndicate Symbol")
                                 .font(.caption)
@@ -212,7 +219,7 @@ private struct EditSyndicateSheet: View {
                                 .padding(.horizontal, 32)
 
                             HStack(spacing: 14) {
-                                ForEach(ProfileOption.symbols, id: \.self) { symbol in
+                                ForEach(SyndicateOption.symbols, id: \.self) { symbol in
                                     Button {
                                         selectedSymbol = symbol
                                     } label: {
