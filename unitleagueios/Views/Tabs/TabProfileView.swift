@@ -299,6 +299,20 @@ struct TabProfileView: View {
                     }
 
                     Button {
+                        isEditingUsername = false
+                        profileSaved = true
+                    } label: {
+                        Text("Cancel")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    Button {
                         appleUserName = ""
                         customUserName = ""
                         appleEmail = ""
