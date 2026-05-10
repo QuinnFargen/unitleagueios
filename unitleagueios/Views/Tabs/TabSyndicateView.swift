@@ -29,11 +29,6 @@ struct TabSyndicateView: View {
                             }
                         }
 
-                        Text("bettor_id: \(bettorId)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
                         if isLoading {
                             ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
                         } else if let error = fetchError {
@@ -137,16 +132,16 @@ private struct SyndicateCard: View {
                     .font(.headline)
                     .foregroundStyle(theme.primaryText(colorScheme))
 
-                Group {
-                    if let desc = syndicate.description {
-                        Text(desc)
-                    } else {
-                        Text("ID \(syndicate.syndicateId)\(syndicate.isPublic ? " · Fantasy" : " · Standard")")
-                    }
+                if let desc = syndicate.description {
+                    Text(desc)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if syndicate.isPublic {
+                    Text("Public")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
             }
 
             Spacer()
