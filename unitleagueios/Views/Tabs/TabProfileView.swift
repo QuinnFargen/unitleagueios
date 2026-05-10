@@ -57,13 +57,22 @@ struct TabProfileView: View {
                     if let email = credential.email { appleEmail = email }
                     let storedEmail = appleEmail.isEmpty ? nil : appleEmail
                     let storedName = appleUserName == "Player" ? nil : appleUserName
+                    
                     Task {
-                        if let bettor = try? await BettorService().createBettor(
-                            appleSub: appleSub,
-                            appleEmail: storedEmail,
-                            appleName: storedName
-                        ) {
+//                        if let bettor = try? await BettorService().createBettor(
+//                            appleSub: appleSub,
+//                            appleEmail: storedEmail,
+//                            appleName: storedName
+//                        ) {
+                        do {
+                            let bettor = try await BettorService().createBettor(
+                                appleSub: appleSub,
+                                appleEmail: storedEmail,
+                                appleName: storedName
+                            )
                             bettorId = bettor.bettorId
+                        } catch {
+                            authError = "Account setup failed: \(error.localizedDescription)"
                         }
                     }
                 case .failure(let error):

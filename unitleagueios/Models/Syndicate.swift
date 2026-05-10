@@ -19,6 +19,16 @@ struct Syndicate: Codable, Identifiable {
         case createdByBettorId = "created_by_bettor_id"
     }
 
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(syndicateId, forKey: .syndicateId)
+        try c.encode(name, forKey: .name)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encode(isPublic, forKey: .isPublic)
+        try c.encodeIfPresent(maxRunner, forKey: .maxRunner)
+        try c.encode(createdByBettorId, forKey: .createdByBettorId)
+    }
+
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         syndicateId = try c.decode(Int.self, forKey: .syndicateId)
