@@ -12,7 +12,8 @@ struct ViewSyndicate: View {
     @State private var fetchError: String?
 
     private var sortedRunners: [Runner] {
-        runners.sorted { $0.balance > $1.balance }
+//        runners.sorted { $0.balance > $1.balance }
+        runners.sorted { ($0.balance ?? 0) > ($1.balance ?? 0) }
     }
 
     private func ordinal(_ n: Int) -> String {
@@ -148,7 +149,8 @@ private struct RunnerRow: View {
 
             HStack(spacing: 3) {
                 Image(systemName: "nairasign.circle.fill")
-                Text("\(runner.balance)").fontWeight(.semibold)
+//                Text("\(runner.balance)").fontWeight(.semibold)
+                Text("\(runner.balance ?? 0)").fontWeight(.semibold)
             }
             .font(.subheadline)
             .foregroundStyle(theme.primaryText(colorScheme))

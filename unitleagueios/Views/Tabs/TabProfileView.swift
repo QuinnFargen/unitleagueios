@@ -57,13 +57,22 @@ struct TabProfileView: View {
                     if let email = credential.email { appleEmail = email }
                     let storedEmail = appleEmail.isEmpty ? nil : appleEmail
                     let storedName = appleUserName == "Player" ? nil : appleUserName
+                    
                     Task {
-                        if let bettor = try? await BettorService().createBettor(
-                            appleSub: appleSub,
-                            appleEmail: storedEmail,
-                            appleName: storedName
-                        ) {
+//                        if let bettor = try? await BettorService().createBettor(
+//                            appleSub: appleSub,
+//                            appleEmail: storedEmail,
+//                            appleName: storedName
+//                        ) {
+                        do {
+                            let bettor = try await BettorService().createBettor(
+                                appleSub: appleSub,
+                                appleEmail: storedEmail,
+                                appleName: storedName
+                            )
                             bettorId = bettor.bettorId
+                        } catch {
+                            authError = "Account setup failed: \(error.localizedDescription)"
                         }
                     }
                 case .failure(let error):
@@ -105,28 +114,66 @@ struct TabProfileView: View {
     }
 
     private var savedProfileView: some View {
-        VStack(spacing: 20) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 24) {
+                ZStack(alignment: .bottomLeading) {
+                    LinearGradient(
+                        colors: [theme.accent.opacity(0.35), Color.secondary],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 80)
 
-            Image(systemName: profileSymbol)
-                .font(.system(size: 80))
-                .foregroundStyle(theme.accent)
+                    HStack(alignment: .center, spacing: 14) {
+                        Image(systemName: profileSymbol)
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundStyle(theme.primaryText(colorScheme))
+                            .frame(width: 48, height: 48)
+                            .background(theme.cardBackgroundProminent(colorScheme))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            Text(displayName)
-                .font(.title)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.primaryText(colorScheme))
+                        Text(displayName)
+                            .font(.title2).bold()
+                            .foregroundStyle(theme.primaryText(colorScheme))
 
-            Button("Edit Profile") {
-                profileSaved = false
+                        Spacer()
+
+                        Button {
+                            profileSaved = false
+                        } label: {
+                            Image(systemName: "pencil.circle")
+                                .font(.title3)
+                                .foregroundStyle(theme.accent)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 14)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                Button {
+                    appleUserName = ""
+                    customUserName = ""
+                    appleEmail = ""
+                    appleSub = ""
+                    bettorId = 0
+                    profileSaved = false
+                } label: {
+                    Text("Sign Out")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(theme.error)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(theme.error.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(theme.accent)
-            .padding(.top, 4)
-
-            Spacer()
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var editProfileView: some View {
@@ -266,24 +313,6 @@ struct TabProfileView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(theme.accent.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-
-                    Button {
-                        appleUserName = ""
-                        customUserName = ""
-                        appleEmail = ""
-                        appleSub = ""
-                        bettorId = 0
-                        profileSaved = false
-                    } label: {
-                        Text("Sign Out")
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundStyle(theme.error)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(theme.error.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }

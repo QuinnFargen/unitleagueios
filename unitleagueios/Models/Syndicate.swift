@@ -8,6 +8,7 @@ struct Syndicate: Codable, Identifiable {
     let isPublic: Bool
     let maxRunner: Int?
     let createdByBettorId: Int
+    let code: String?
 
     enum CodingKeys: String, CodingKey {
         case syndicateId = "syndicate_id"
@@ -17,6 +18,17 @@ struct Syndicate: Codable, Identifiable {
         case fantasy
         case maxRunner = "max_runner"
         case createdByBettorId = "created_by_bettor_id"
+        case code
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(syndicateId, forKey: .syndicateId)
+        try c.encode(name, forKey: .name)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encode(isPublic, forKey: .isPublic)
+        try c.encodeIfPresent(maxRunner, forKey: .maxRunner)
+        try c.encode(createdByBettorId, forKey: .createdByBettorId)
     }
 
     init(from decoder: Decoder) throws {
@@ -32,5 +44,6 @@ struct Syndicate: Codable, Identifiable {
         } else {
             isPublic = try c.decodeIfPresent(Bool.self, forKey: .isPublic) ?? false
         }
+        code = try c.decodeIfPresent(String.self, forKey: .code)
     }
 }

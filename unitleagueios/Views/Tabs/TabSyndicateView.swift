@@ -169,22 +169,22 @@ private struct JoinSyndicateSheet: View {
     @Environment(\.dismiss) private var dismiss
     let bettorId: Int
 
-    @State private var syndicateIdInput = ""
+    @State private var syndicateCode = ""
     @State private var password = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    private var syndicateId: Int? { Int(syndicateIdInput.trimmingCharacters(in: .whitespaces)) }
+    private var codeIsValid: Bool { !syndicateCode.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private func join() {
-        guard let id = syndicateId else { return }
+        guard codeIsValid else { return }
         isLoading = true
         errorMessage = nil
         Task {
             do {
                 _ = try await SyndicateService().joinSyndicate(
                     bettorId: bettorId,
-                    syndicateId: id,
+                    code: syndicateCode.trimmingCharacters(in: .whitespaces),
                     password: password.isEmpty ? nil : password
                 )
                 dismiss()
@@ -201,9 +201,10 @@ private struct JoinSyndicateSheet: View {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
                 Form {
-                    Section("Syndicate ID") {
-                        TextField("Enter syndicate ID", text: $syndicateIdInput)
-                            .keyboardType(.numberPad)
+                    Section("Syndicate Code") {
+                        TextField("Enter syndicate code", text: $syndicateCode)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.characters)
                     }
 
                     Section("Password (optional)") {
@@ -230,7 +231,7 @@ private struct JoinSyndicateSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Join") { join() }
-                        .disabled(syndicateId == nil || isLoading)
+                        .disabled(!codeIsValid || isLoading)
                         .tint(theme.accent)
                 }
                 ToolbarItem(placement: .cancellationAction) {
@@ -257,8 +258,8 @@ private struct CreateSyndicateSheet: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    private var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
     private var maxRunner: Int? { Int(maxRunnerInput.trimmingCharacters(in: .whitespaces)) }
+    private var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && maxRunner != nil }
 
     private func create() {
         isLoading = true
@@ -299,13 +300,13 @@ private struct CreateSyndicateSheet: View {
                         SecureField("Set a password", text: $password)
                     }
 
-                    Section("Max Members (optional)") {
-                        TextField("No limit", text: $maxRunnerInput)
+                    Section("Max Members") {
+                        TextField("Enter max members", text: $maxRunnerInput)
                             .keyboardType(.numberPad)
                     }
 
                     Section {
-                        Toggle("Fantasy", isOn: $isPublic)
+                        Toggle("Public", isOn: $isPublic)
                             .tint(theme.accent)
                     }
 
