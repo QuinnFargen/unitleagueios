@@ -151,24 +151,6 @@ struct TabProfileView: View {
                     .padding(.bottom, 14)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                Button {
-                    appleUserName = ""
-                    customUserName = ""
-                    appleEmail = ""
-                    appleSub = ""
-                    bettorId = 0
-                    profileSaved = false
-                } label: {
-                    Text("Sign Out")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundStyle(theme.error)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(theme.error.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
@@ -313,6 +295,24 @@ struct TabProfileView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(theme.accent.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    Button {
+                        appleUserName = ""
+                        customUserName = ""
+                        appleEmail = ""
+                        appleSub = ""
+                        bettorId = 0
+                        profileSaved = false
+                    } label: {
+                        Text("Sign Out")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(theme.error)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(theme.error.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }

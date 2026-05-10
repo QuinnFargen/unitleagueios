@@ -35,6 +35,23 @@ class SyndicateService {
         return try JSONDecoder().decode(CreateSyndicateResponse.self, from: data).syndicate
     }
 
+    func updateSyndicate(syndicateId: Int, name: String, symbol: String? = nil, color: String? = nil) async throws -> Syndicate {
+        guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate/\(syndicateId)") else {
+            throw URLError(.badURL)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        var body: [String: Any] = ["name": name]
+        if let sym = symbol { body["symbol"] = sym }
+        if let col = color  { body["color"] = col }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return try JSONDecoder().decode(Syndicate.self, from: data)
+    }
+
     func joinSyndicate(bettorId: Int, code: String, password: String? = nil) async throws -> Runner {
         guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate/join/\(code)") else {
             throw URLError(.badURL)
