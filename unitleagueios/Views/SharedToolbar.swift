@@ -137,25 +137,35 @@ private struct SharedDatePickerSheet: View {
 struct TabToolbar: ViewModifier {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("profileSymbol")   private var profileSymbol: String   = ProfileOption.symbols[0]
-    @AppStorage("leagueSymbol")    private var leagueSymbol: String    = "sportscourt"
-    @AppStorage("leagueColorName") private var leagueColorName: String = AccentOption.allCases[0].rawValue
-    @AppStorage("userUnits")       private var userUnits: Int          = 100
+    @AppStorage("profileSymbol")       private var profileSymbol: String       = ProfileOption.symbols[0]
+    @AppStorage("leagueSymbol")        private var leagueSymbol: String        = "sportscourt"
+    @AppStorage("leagueColorName")     private var leagueColorName: String     = AccentOption.allCases[0].rawValue
+    @AppStorage("userUnits")           private var userUnits: Int              = 100
+    @AppStorage("bettorId")            private var bettorId: Int               = 0
+    @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int    = 0
+    @State private var showingSyndicateSelector = false
 
     private var leagueLeadingItem: some View {
-        HStack(spacing: 6) {
-            Image(systemName: leagueSymbol)
-                .font(.title2)
-                .foregroundStyle(ProfileOption.color(for: leagueColorName))
+        Button { showingSyndicateSelector = true } label: {
+            HStack(spacing: 6) {
+                Image(systemName: leagueSymbol)
+                    .font(.title2)
+                    .foregroundStyle(ProfileOption.color(for: leagueColorName))
 
-                HStack(spacing: 4) {
-                    Text("2nd")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                    Text("-15")
+                if selectedSyndicateId != 0 {
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Select")
                         .font(.caption)
-                        .foregroundStyle(theme.error)
+                        .foregroundStyle(.secondary)
                 }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(theme.cardBackground(colorScheme))
+            .clipShape(Capsule())
         }
         .fixedSize()
     }
@@ -189,6 +199,126 @@ struct TabToolbar: ViewModifier {
                     }
                 }
             }
+            .sheet(isPresented: $showingSyndicateSelector) {
+                SyndicateSelectorSheet(
+                    bettorId: bettorId,
+                    selectedSyndicateId: $selectedSyndicateId,
+                    leagueSymbol: $leagueSymbol,
+                    leagueColorName: $leagueColorName
+                )
+            }
+    }
+}
+
+// MARK: - SyndicateSelectorSheet
+
+private struct SyndicateSelectorSheet: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dismiss) private var dismiss
+
+    let bettorId: Int
+    @Binding var selectedSyndicateId: Int
+    @Binding var leagueSymbol: String
+    @Binding var leagueColorName: String
+
+    @State private var syndicates: [Syndicate] = []
+    @State private var isLoading = false
+    @State private var fetchError: String?
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                theme.appBackground(colorScheme).ignoresSafeArea()
+
+                if isLoading {
+                    ProgressView()
+                } else if let error = fetchError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding()
+                } else {
+                    List {
+                        Button {
+                            selectedSyndicateId = 0
+                            leagueSymbol = "sportscourt"
+                            leagueColorName = AccentOption.allCases[0].rawValue
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Image(systemName: "xmark.circle")
+                                    .font(.title2)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 40, height: 40)
+
+                                Text("None")
+                                    .foregroundStyle(theme.primaryText(colorScheme))
+
+                                Spacer()
+
+                                if selectedSyndicateId == 0 {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(theme.accent)
+                                }
+                            }
+                        }
+
+                        ForEach(syndicates) { syndicate in
+                            let iconName = syndicate.symbol ?? "person.3.fill"
+                            let iconColor = ProfileOption.color(for: syndicate.color ?? "")
+                            Button {
+                                selectedSyndicateId = syndicate.syndicateId
+                                leagueSymbol = iconName
+                                leagueColorName = syndicate.color ?? AccentOption.allCases[0].rawValue
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 14) {
+                                    Image(systemName: iconName)
+                                        .font(.title2)
+                                        .foregroundStyle(iconColor)
+                                        .frame(width: 40, height: 40)
+
+                                    Text(syndicate.name)
+                                        .foregroundStyle(theme.primaryText(colorScheme))
+
+                                    Spacer()
+
+                                    if selectedSyndicateId == syndicate.syndicateId {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(theme.accent)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .navigationTitle("Select Syndicate")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .task { await load() }
+        }
+    }
+
+    private func load() async {
+        guard bettorId > 0 else { return }
+        isLoading = true
+        fetchError = nil
+        do {
+            let raw = try await SyndicateService().fetchSyndicate(bettorId: bettorId)
+            var seen = Set<Int>()
+            syndicates = raw.filter { seen.insert($0.syndicateId).inserted }
+        } catch {
+            fetchError = error.localizedDescription
+        }
+        isLoading = false
     }
 }
 

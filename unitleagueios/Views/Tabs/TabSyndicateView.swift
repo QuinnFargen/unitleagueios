@@ -3,7 +3,8 @@ import SwiftUI
 struct TabSyndicateView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("bettorId") private var bettorId: Int = 0
+    @AppStorage("bettorId")            private var bettorId: Int = 0
+    @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int = 0
 
     @State private var syndicates: [Syndicate] = []
     @State private var isLoading = false
@@ -46,7 +47,10 @@ struct TabSyndicateView: View {
 
                                 ForEach(syndicates) { syndicate in
                                     NavigationLink(destination: ViewSyndicate(syndicate: syndicate)) {
-                                        SyndicateCard(syndicate: syndicate)
+                                        SyndicateCard(
+                                            syndicate: syndicate,
+                                            isSelected: syndicate.syndicateId == selectedSyndicateId
+                                        )
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -117,6 +121,7 @@ private struct SyndicateCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let syndicate: Syndicate
+    var isSelected: Bool = false
 
     var body: some View {
         let iconName = syndicate.symbol ?? (syndicate.isPublic ? "sportscourt" : "house.fill")
@@ -127,7 +132,7 @@ private struct SyndicateCard: View {
                 .font(.title2)
                 .foregroundStyle(iconColor)
                 .frame(width: 44, height: 44)
-                .background(theme.cardBackground(colorScheme))
+                .background(isSelected ? theme.accent.opacity(0.15) : theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 2) {
@@ -149,13 +154,27 @@ private struct SyndicateCard: View {
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.body)
+                    .foregroundStyle(theme.accent)
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
         }
         .padding()
-        .background(theme.cardBackground(colorScheme))
+        .background(
+            isSelected
+                ? LinearGradient(colors: [theme.accent.opacity(0.18), theme.cardBackground(colorScheme)], startPoint: .leading, endPoint: .trailing)
+                : LinearGradient(colors: [theme.cardBackground(colorScheme)], startPoint: .leading, endPoint: .trailing)
+        )
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(isSelected ? theme.accent.opacity(0.4) : Color.clear, lineWidth: 1.5)
+        )
     }
 }
 

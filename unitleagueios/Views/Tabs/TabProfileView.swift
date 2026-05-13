@@ -59,11 +59,6 @@ struct TabProfileView: View {
                     let storedName = appleUserName == "Player" ? nil : appleUserName
                     
                     Task {
-//                        if let bettor = try? await BettorService().createBettor(
-//                            appleSub: appleSub,
-//                            appleEmail: storedEmail,
-//                            appleName: storedName
-//                        ) {
                         do {
                             let bettor = try await BettorService().createBettor(
                                 appleSub: appleSub,
@@ -71,6 +66,11 @@ struct TabProfileView: View {
                                 appleName: storedName
                             )
                             bettorId = bettor.bettorId
+                            if let pn = bettor.profileName, !pn.isEmpty { customUserName = pn }
+                            if let sym = bettor.symbol, !sym.isEmpty    { profileSymbol = sym }
+                            if let col = bettor.color,
+                               let accent = AccentOption(rawValue: col)  { theme.accentOption = accent }
+                            if !customUserName.isEmpty                   { profileSaved = true }
                         } catch {
                             authError = "Account setup failed: \(error.localizedDescription)"
                         }
@@ -116,40 +116,30 @@ struct TabProfileView: View {
     private var savedProfileView: some View {
         ScrollView {
             VStack(spacing: 24) {
-                ZStack(alignment: .bottomLeading) {
-                    LinearGradient(
-                        colors: [theme.accent.opacity(0.35), Color.secondary],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 80)
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: profileSymbol)
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(theme.accent)
+                        .frame(width: 48, height: 48)
+                        .background(theme.cardBackgroundProminent(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                    HStack(alignment: .center, spacing: 14) {
-                        Image(systemName: profileSymbol)
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(theme.primaryText(colorScheme))
-                            .frame(width: 48, height: 48)
-                            .background(theme.cardBackgroundProminent(colorScheme))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    Text(displayName)
+                        .font(.title2).bold()
+                        .foregroundStyle(theme.primaryText(colorScheme))
 
-                        Text(displayName)
-                            .font(.title2).bold()
-                            .foregroundStyle(theme.primaryText(colorScheme))
+                    Spacer()
 
-                        Spacer()
-
-                        Button {
-                            profileSaved = false
-                        } label: {
-                            Image(systemName: "pencil.circle")
-                                .font(.title3)
-                                .foregroundStyle(theme.accent)
-                        }
+                    Button {
+                        profileSaved = false
+                    } label: {
+                        Image(systemName: "pencil.circle")
+                            .font(.title3)
+                            .foregroundStyle(theme.accent)
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom, 14)
                 }
+                .padding()
+                .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .padding(.horizontal, 16)

@@ -3,7 +3,10 @@ import SwiftUI
 struct ViewSyndicate: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("bettorId") private var bettorId: Int = 0
+    @AppStorage("bettorId")            private var bettorId: Int = 0
+    @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int = 0
+    @AppStorage("leagueSymbol")        private var leagueSymbol: String = "sportscourt"
+    @AppStorage("leagueColorName")     private var leagueColorName: String = AccentOption.allCases[0].rawValue
 
     @State var syndicate: Syndicate
     @State private var runners: [Runner] = []
@@ -68,6 +71,26 @@ struct ViewSyndicate: View {
         }
         .navigationTitle(syndicate.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                let isSelected = selectedSyndicateId == syndicate.syndicateId
+                Button {
+                    if isSelected {
+                        selectedSyndicateId = 0
+                        leagueSymbol = "sportscourt"
+                        leagueColorName = AccentOption.allCases[0].rawValue
+                    } else {
+                        selectedSyndicateId = syndicate.syndicateId
+                        leagueSymbol = syndicate.symbol ?? "person.3.fill"
+                        leagueColorName = syndicate.color ?? AccentOption.allCases[0].rawValue
+                    }
+                } label: {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(isSelected ? theme.accent : .secondary)
+                }
+            }
+        }
         .task { await load() }
         .sheet(isPresented: $showingEdit) {
             EditSyndicateSheet(syndicate: $syndicate)
@@ -78,50 +101,40 @@ struct ViewSyndicate: View {
         let bannerColor = ProfileOption.color(for: syndicate.color ?? "")
         let iconName = syndicate.symbol ?? (syndicate.isPublic ? "sparkles" : "person.3.fill")
 
-        return ZStack(alignment: .bottomLeading) {
-            LinearGradient(
-                colors: [bannerColor.opacity(0.35), Color.secondary],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(maxWidth: .infinity)
-            .frame(height: 80)
+        return HStack(alignment: .center, spacing: 14) {
+            Image(systemName: iconName)
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(bannerColor)
+                .frame(width: 48, height: 48)
+                .background(theme.cardBackgroundProminent(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: iconName)
-                    .font(.system(size: 28, weight: .semibold))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(syndicate.name)
+                    .font(.title2).bold()
                     .foregroundStyle(theme.primaryText(colorScheme))
-                    .frame(width: 48, height: 48)
-                    .background(theme.cardBackgroundProminent(colorScheme))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(syndicate.name)
-                        .font(.title2).bold()
-                        .foregroundStyle(theme.primaryText(colorScheme))
-
-                    if syndicate.isPublic {
-                        Text("Public")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(theme.accent)
-                    }
-                }
-
-                Spacer()
-
-                if isAdmin {
-                    Button {
-                        showingEdit = true
-                    } label: {
-                        Image(systemName: "pencil.circle")
-                            .font(.title3)
-                            .foregroundStyle(theme.accent)
-                    }
+                if syndicate.isPublic {
+                    Text("Public")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.accent)
                 }
             }
-            .padding(.horizontal)
-            .padding(.bottom, 14)
+
+            Spacer()
+
+            if isAdmin {
+                Button {
+                    showingEdit = true
+                } label: {
+                    Image(systemName: "pencil.circle")
+                        .font(.title3)
+                        .foregroundStyle(theme.accent)
+                }
+            }
         }
+        .padding()
+        .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .padding(.horizontal, 16)
         .padding(.top, 16)
