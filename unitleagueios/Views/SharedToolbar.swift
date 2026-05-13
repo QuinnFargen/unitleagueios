@@ -138,12 +138,24 @@ struct TabToolbar: ViewModifier {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("profileSymbol")       private var profileSymbol: String       = ProfileOption.symbols[0]
-    @AppStorage("leagueSymbol")        private var leagueSymbol: String        = "sportscourt"
+    @AppStorage("leagueSymbol")        private var leagueSymbol: String        = "person.circle.fill"
     @AppStorage("leagueColorName")     private var leagueColorName: String     = AccentOption.allCases[0].rawValue
     @AppStorage("userUnits")           private var userUnits: Int              = 100
     @AppStorage("bettorId")            private var bettorId: Int               = 0
     @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int    = 0
+    @AppStorage("leagueRank")          private var leagueRank: Int             = 0
     @State private var showingSyndicateSelector = false
+    @State private var showingProfileActions = false
+
+    private func rankLabel(_ rank: Int) -> String {
+        switch rank {
+        case 1:  return "1st"
+        case 2:  return "2nd"
+        case 3:  return "3rd"
+        case let n where n > 3: return "\(n)th"
+        default: return "Last"
+        }
+    }
 
     private var leagueLeadingItem: some View {
         Button { showingSyndicateSelector = true } label: {
@@ -152,21 +164,39 @@ struct TabToolbar: ViewModifier {
                     .font(.title2)
                     .foregroundStyle(ProfileOption.color(for: leagueColorName))
 
-                if selectedSyndicateId != 0 {
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Select")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text(rankLabel(leagueRank))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.primaryText(colorScheme))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(theme.cardBackground(colorScheme))
             .clipShape(Capsule())
         }
+        .buttonStyle(.plain)
+        .fixedSize()
+    }
+
+    private var profileTrailingItem: some View {
+        Button { showingProfileActions = true } label: {
+            HStack(spacing: 10) {
+                HStack(spacing: 3) {
+                    Image(systemName: "nairasign.circle.fill")
+                    Text("\(userUnits)").fontWeight(.semibold)
+                }
+                .font(.subheadline)
+                .foregroundStyle(theme.primaryText(colorScheme))
+
+                Image(systemName: profileSymbol)
+                    .font(.title2)
+                    .foregroundStyle(theme.accent)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(theme.cardBackground(colorScheme))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
         .fixedSize()
     }
 
@@ -185,18 +215,7 @@ struct TabToolbar: ViewModifier {
                         .frame(height: 100)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 10) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "nairasign.circle.fill")
-                            Text("\(userUnits)").fontWeight(.semibold)
-                        }
-                        .font(.subheadline)
-                        .foregroundStyle(theme.primaryText(colorScheme))
-
-                        Image(systemName: profileSymbol)
-                            .font(.title2)
-                            .foregroundStyle(theme.accent)
-                    }
+                    profileTrailingItem
                 }
             }
             .sheet(isPresented: $showingSyndicateSelector) {
@@ -204,8 +223,12 @@ struct TabToolbar: ViewModifier {
                     bettorId: bettorId,
                     selectedSyndicateId: $selectedSyndicateId,
                     leagueSymbol: $leagueSymbol,
-                    leagueColorName: $leagueColorName
+                    leagueColorName: $leagueColorName,
+                    leagueRank: $leagueRank
                 )
+            }
+            .sheet(isPresented: $showingProfileActions) {
+                ProfileActionsSheet()
             }
     }
 }
@@ -221,6 +244,7 @@ private struct SyndicateSelectorSheet: View {
     @Binding var selectedSyndicateId: Int
     @Binding var leagueSymbol: String
     @Binding var leagueColorName: String
+    @Binding var leagueRank: Int
 
     @State private var syndicates: [Syndicate] = []
     @State private var isLoading = false
@@ -242,17 +266,18 @@ private struct SyndicateSelectorSheet: View {
                     List {
                         Button {
                             selectedSyndicateId = 0
-                            leagueSymbol = "sportscourt"
+                            leagueSymbol = "person.circle.fill"
                             leagueColorName = AccentOption.allCases[0].rawValue
+                            leagueRank = 0
                             dismiss()
                         } label: {
-                            HStack {
-                                Image(systemName: "xmark.circle")
+                            HStack(spacing: 14) {
+                                Image(systemName: "person.circle.fill")
                                     .font(.title2)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 40, height: 40)
 
-                                Text("None")
+                                Text("Solo Syndicate")
                                     .foregroundStyle(theme.primaryText(colorScheme))
 
                                 Spacer()
@@ -271,6 +296,7 @@ private struct SyndicateSelectorSheet: View {
                                 selectedSyndicateId = syndicate.syndicateId
                                 leagueSymbol = iconName
                                 leagueColorName = syndicate.color ?? AccentOption.allCases[0].rawValue
+                                leagueRank = 0
                                 dismiss()
                             } label: {
                                 HStack(spacing: 14) {
@@ -319,6 +345,29 @@ private struct SyndicateSelectorSheet: View {
             fetchError = error.localizedDescription
         }
         isLoading = false
+    }
+}
+
+// MARK: - ProfileActionsSheet
+
+private struct ProfileActionsSheet: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                theme.appBackground(colorScheme).ignoresSafeArea()
+            }
+            .navigationTitle("Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
 

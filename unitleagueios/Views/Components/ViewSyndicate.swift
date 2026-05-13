@@ -5,8 +5,9 @@ struct ViewSyndicate: View {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("bettorId")            private var bettorId: Int = 0
     @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int = 0
-    @AppStorage("leagueSymbol")        private var leagueSymbol: String = "sportscourt"
+    @AppStorage("leagueSymbol")        private var leagueSymbol: String = "person.circle.fill"
     @AppStorage("leagueColorName")     private var leagueColorName: String = AccentOption.allCases[0].rawValue
+    @AppStorage("leagueRank")          private var leagueRank: Int = 0
 
     @State var syndicate: Syndicate
     @State private var runners: [Runner] = []
@@ -77,12 +78,14 @@ struct ViewSyndicate: View {
                 Button {
                     if isSelected {
                         selectedSyndicateId = 0
-                        leagueSymbol = "sportscourt"
+                        leagueSymbol = "person.circle.fill"
                         leagueColorName = AccentOption.allCases[0].rawValue
+                        leagueRank = 0
                     } else {
                         selectedSyndicateId = syndicate.syndicateId
                         leagueSymbol = syndicate.symbol ?? "person.3.fill"
                         leagueColorName = syndicate.color ?? AccentOption.allCases[0].rawValue
+                        leagueRank = rankInSyndicate()
                     }
                 } label: {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -140,11 +143,22 @@ struct ViewSyndicate: View {
         .padding(.top, 16)
     }
 
+    private func rankInSyndicate() -> Int {
+        let sorted = runners.sorted { ($0.balance ?? 0) > ($1.balance ?? 0) }
+        if let idx = sorted.firstIndex(where: { $0.bettorId == bettorId }) {
+            return idx + 1
+        }
+        return 0
+    }
+
     private func load() async {
         isLoading = true
         fetchError = nil
         do {
             runners = try await RunnerService().fetchRunner(syndicateId: syndicate.syndicateId)
+            if selectedSyndicateId == syndicate.syndicateId {
+                leagueRank = rankInSyndicate()
+            }
         } catch {
             fetchError = error.localizedDescription
         }
