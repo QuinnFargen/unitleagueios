@@ -36,6 +36,11 @@ struct TabBetsView: View {
     private var leaguesWithOdds: Set<Int> { Set(allOdds.map(\.leagueId)) }
     private var leaguesWithGames: Set<Int> { Set(allGames.map(\.leagueId)) }
 
+    private var filteredTeams: [Team] {
+        let gameTeamIds = Set(games.flatMap { [$0.homeTeamId, $0.awayTeamId] })
+        return teams.filter { gameTeamIds.contains($0.id) }
+    }
+
     private var availabilityTint: (Int) -> Color? {
         { id in
             if selectedBetType == "None" {
@@ -88,6 +93,25 @@ struct TabBetsView: View {
                         .padding(.vertical, 8)
                     }
 
+                    // Team filter — shown between league and bet types when a league is selected
+                    if !filteredTeams.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(filteredTeams) { team in
+                                    FilterChip(
+                                        label: team.abbr,
+                                        isSelected: selectedTeamId == team.id
+                                    ) {
+                                        selectedTeamId = (selectedTeamId == team.id) ? nil : team.id
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
                     // Bet type filter
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -102,25 +126,6 @@ struct TabBetsView: View {
                         }
                         .padding(.horizontal)
                         .padding(.vertical, 8)
-                    }
-
-                    // Team filter — only shown when a league is selected
-                    if !teams.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(teams) { team in
-                                    FilterChip(
-                                        label: team.abbr,
-                                        isSelected: selectedTeamId == team.id
-                                    ) {
-                                        selectedTeamId = (selectedTeamId == team.id) ? nil : team.id
-                                    }
-                                }
-                            }
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
                     Divider().background(theme.divider(colorScheme))
