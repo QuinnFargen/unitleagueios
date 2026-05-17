@@ -6,12 +6,98 @@ struct SelectedBet: Identifiable {
     let id = UUID()
     let betHash: String
     let type: String        // "ML", "SPR", "O/U"
-    let side: String        // "Away" or "Home"
+    let side: String        // "Away", "Home", "Over", "Under"
     let price: Double
     let points: Double?     // spread value or O/U total; nil for ML
     let awayAbbr: String
     let homeAbbr: String
     let gameTime: String?
+}
+
+// MARK: - BetGameBanner
+
+struct BetGameBanner: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
+    let bet: SelectedBet
+
+    private let timeInputFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+    private let timeOutputFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    private var formattedTime: String? {
+        guard let raw = bet.gameTime, let d = timeInputFmt.date(from: raw) else { return nil }
+        return timeOutputFmt.string(from: d)
+    }
+
+    private var betLabel: String {
+        switch bet.type {
+        case "SPR":
+            if let p = bet.points {
+                let s = p == p.rounded()
+                    ? (p >= 0 ? "+\(Int(p))" : "\(Int(p))")
+                    : String(format: p >= 0 ? "+%.1f" : "%.1f", p)
+                return "\(bet.side) \(s)"
+            }
+            return "\(bet.side) SPR"
+        case "O/U":
+            if let p = bet.points {
+                let s = p == p.rounded() ? "\(Int(p))" : String(format: "%.1f", p)
+                return "\(bet.side) \(s)"
+            }
+            return "\(bet.side) O/U"
+        default:
+            return "\(bet.side) \(bet.type)"
+        }
+    }
+
+    private var impliedPctStr: String {
+        guard bet.price > 0 else { return "" }
+        return "\(Int((1.0 / bet.price * 100.0).rounded()))%"
+    }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(bet.awayAbbr + " @ " + bet.homeAbbr)
+                    .font(.headline)
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                if let time = formattedTime {
+                    Text(time)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(betLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(String(format: "%.2f", bet.price))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(theme.primaryText(colorScheme))
+                if !impliedPctStr.isEmpty {
+                    Text(impliedPctStr)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding()
+        .background(theme.cardBackground(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
 }
 
 // MARK: - ViewGameDetail
@@ -290,6 +376,7 @@ private struct BetConfirmationSheet: View {
     @EnvironmentObject private var betStore: BetStore
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("unitBalance") private var unitBalance: Int = 100
 
     let bet: SelectedBet
     let bettorId: Int
@@ -297,43 +384,8 @@ private struct BetConfirmationSheet: View {
 
     @State private var unitsInput: String = ""
 
-    private let timeInputFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm:ss"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private let timeOutputFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private var formattedTime: String {
-        guard let raw = bet.gameTime,
-              let date = timeInputFormatter.date(from: raw)
-        else { return "—" }
-        return timeOutputFormatter.string(from: date)
-    }
-
-    private var betTypeLabel: String {
-        var label = "\(bet.side) \(bet.type)"
-        if let pts = bet.points {
-            let formatted = pts == pts.rounded() ? "\(Int(pts))" : String(format: "%.1f", pts)
-            label += " (\(formatted))"
-        }
-        return label
-    }
-
     private var computedUnits: Int { Int(unitsInput) ?? 0 }
-
-    private var potentialReturn: String {
-        guard computedUnits > 0 else { return "—" }
-        return String(format: "%.2f", Double(computedUnits) * bet.price)
-    }
-
+    private var potentialReturn: Double { Double(computedUnits) * bet.price }
     private var impliedPct: String {
         guard bet.price > 0 else { return "—" }
         return "\(Int((1.0 / bet.price * 100.0).rounded()))%"
@@ -344,35 +396,80 @@ private struct BetConfirmationSheet: View {
             ZStack {
                 theme.appBackground(colorScheme).ignoresSafeArea()
 
-                Form {
-                    Section("Game") {
-                        LabeledContent("Match", value: "\(bet.awayAbbr) @ \(bet.homeAbbr)")
-                        LabeledContent("Time", value: formattedTime)
-                        LabeledContent("Bet Type", value: betTypeLabel)
-                        LabeledContent("Odds", value: String(format: "%.2f", bet.price))
-                        LabeledContent("Implied Prob", value: impliedPct)
-                    }
+                ScrollView {
+                    VStack(spacing: 16) {
 
-                    Section("IDs") {
-                        LabeledContent("Bettor ID", value: "\(bettorId)")
-                        LabeledContent("Syndicate ID", value: "\(syndicateId)")
-                        LabeledContent("Bet ID", value: bet.betHash)
-                            .font(.caption)
-                    }
+                        // Reusable bet banner
+                        BetGameBanner(bet: bet)
 
-                    Section("Wager") {
-                        HStack {
-                            Text("Units")
-                            Spacer()
-                            TextField("0", text: $unitsInput)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
+                        // IDs
+                        VStack(spacing: 8) {
+                            infoRow("Bettor ID", "\(bettorId)")
+                            infoRow("Syndicate ID", "\(syndicateId)")
+                            infoRow("Bet Hash", String(bet.betHash.prefix(14)) + "…")
                         }
-                        LabeledContent("Potential Return", value: "\(potentialReturn) units")
-                    }
+                        .font(.caption)
+                        .padding()
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                    Section {
-                        Button("Submit Bet") {
+                        // Balance
+                        HStack {
+                            Text("Current Balance")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(unitBalance) units")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.primaryText(colorScheme))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                        // Units input
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Wager")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 4)
+                            HStack(spacing: 10) {
+                                TextField("0", text: $unitsInput)
+                                    .keyboardType(.numberPad)
+                                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                                    .multilineTextAlignment(.center)
+                                    .foregroundStyle(computedUnits > 0 ? theme.primaryText(colorScheme) : .secondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 18)
+                                    .background(theme.cardBackgroundProminent(colorScheme))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Text("units")
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        // Summary banner
+                        HStack(spacing: 0) {
+                            summaryCell(
+                                "Risked",
+                                computedUnits > 0 ? "\(computedUnits)u" : "—"
+                            )
+                            Divider().frame(height: 36)
+                            summaryCell(
+                                "Return",
+                                computedUnits > 0 ? String(format: "%.2fu", potentialReturn) : "—"
+                            )
+                            Divider().frame(height: 36)
+                            summaryCell("Implied", impliedPct)
+                        }
+                        .padding(.vertical, 14)
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                        // Submit
+                        Button {
                             guard computedUnits > 0 else { return }
                             betStore.place(PlacedBet(
                                 id: UUID(),
@@ -389,14 +486,20 @@ private struct BetConfirmationSheet: View {
                                 syndicateId: syndicateId
                             ))
                             dismiss()
+                        } label: {
+                            Text("Submit Bet")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(computedUnits > 0 ? theme.accent : .secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background((computedUnits > 0 ? theme.accent : Color.secondary).opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         .disabled(computedUnits == 0)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .foregroundStyle(computedUnits == 0 ? .secondary : theme.accent)
-                        .fontWeight(.semibold)
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
                 }
-                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Confirm Bet")
             .navigationBarTitleDisplayMode(.inline)
@@ -406,5 +509,27 @@ private struct BetConfirmationSheet: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func infoRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).foregroundStyle(theme.primaryText(colorScheme))
+        }
+    }
+
+    @ViewBuilder
+    private func summaryCell(_ label: String, _ value: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(theme.primaryText(colorScheme))
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
