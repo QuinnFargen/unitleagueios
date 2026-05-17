@@ -4,7 +4,7 @@ struct MainTabView: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("bettorId") private var bettorId: Int = 0
-    @State private var selectedTab = 4
+    @State private var selectedTab = 3
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -20,23 +20,17 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
-            TabGamesView()
-                .tabItem {
-                    Label("Games", systemImage: "gamecontroller")
-                }
-                .tag(2)
-
             TabBetsView()
                 .tabItem {
                     Label("Bets", systemImage: "bitcoinsign.bank.building")
                 }
-                .tag(3)
+                .tag(2)
 
             TabProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "figure.pickleball")
                 }
-                .tag(4)
+                .tag(3)
         }
         .tint(theme.accent)
         .task {

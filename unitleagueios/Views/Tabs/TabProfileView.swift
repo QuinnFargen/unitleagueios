@@ -110,6 +110,8 @@ struct TabProfileView: View {
         }
     }
 
+    @AppStorage("useLocalAPI") private var useLocalAPI: Bool = false
+
     private var savedProfileView: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -134,6 +136,20 @@ struct TabProfileView: View {
                             .font(.title3)
                             .foregroundStyle(theme.accent)
                     }
+                }
+                .padding()
+                .background(theme.cardBackground(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                HStack {
+                    Image(systemName: "network")
+                        .foregroundStyle(theme.accent)
+                    Text("Use Local API")
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                    Spacer()
+                    Toggle("", isOn: $useLocalAPI)
+                        .labelsHidden()
+                        .tint(theme.accent)
                 }
                 .padding()
                 .background(theme.cardBackground(colorScheme))
