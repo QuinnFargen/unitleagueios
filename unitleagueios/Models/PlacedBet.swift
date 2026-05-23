@@ -7,7 +7,7 @@ struct PlacedBet: Codable, Identifiable {
     let side: String        // "Away" or "Home"
     let price: Double
     let points: Double?     // spread value or O/U total; nil for ML
-    let units: Int
+    let units: Double
     let awayAbbr: String
     let homeAbbr: String
     let gameTime: String?   // raw "HH:mm:ss" from API
