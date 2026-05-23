@@ -479,51 +479,46 @@ private struct BetConfirmationSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
 
                         // Wager stepper
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Wager")
+                        HStack(spacing: 0) {
+                            Button {
+                                wagerUnits = max(0.5, wagerUnits - 0.5)
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(wagerUnits <= 0.5 ? theme.loss.opacity(0.3) : theme.loss)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(wagerUnits <= 0.5)
+
+                            Spacer()
+
+                            VStack(spacing: 2) {
+                                Text(wagerLabel(wagerUnits))
+                                    .font(.title2.weight(.bold))
+                                    .foregroundStyle(theme.primaryText(colorScheme))
+                                HStack(spacing: 3) {
+                                    Text("Units")
+                                    Image(systemName: "nairasign.circle.fill")
+                                }
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal, 4)
-
-                            HStack(spacing: 8) {
-                                Button {
-                                    wagerUnits = max(0.5, wagerUnits - 0.5)
-                                } label: {
-                                    Image(systemName: "minus.circle.fill")
-                                        .font(.title)
-                                        .foregroundStyle(wagerUnits <= 0.5 ? Color.red.opacity(0.3) : Color.red)
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(wagerUnits <= 0.5)
-
-                                ForEach([0.5, 1.0], id: \.self) { preset in
-                                    let isSelected = wagerUnits == preset
-                                    Button { wagerUnits = preset } label: {
-                                        Text(preset == 0.5 ? "½" : "1")
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(isSelected ? theme.accent : theme.primaryText(colorScheme))
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 14)
-                                            .background(isSelected ? theme.accent.opacity(0.15) : theme.cardBackground(colorScheme))
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(isSelected ? theme.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
-                                            )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-
-                                Button {
-                                    wagerUnits += 0.5
-                                } label: {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.title)
-                                        .foregroundStyle(Color.green)
-                                }
-                                .buttonStyle(.plain)
                             }
+
+                            Spacer()
+
+                            Button {
+                                wagerUnits += 0.5
+                            } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(theme.win)
+                            }
+                            .buttonStyle(.plain)
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
 
                         // Summary banner
                         HStack(spacing: 0) {
