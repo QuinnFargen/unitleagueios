@@ -461,4 +461,5 @@ enum ProfileOption {
 #Preview {
     TabProfileView()
         .environmentObject(AppTheme())
+        .environmentObject(BetStore())
 }
