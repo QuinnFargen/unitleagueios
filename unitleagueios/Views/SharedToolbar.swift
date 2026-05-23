@@ -409,9 +409,12 @@ private struct ProfileActionsSheet: View {
                             }
                             Spacer()
                             VStack(alignment: .trailing, spacing: 2) {
-                                Text("\(bet.units)u")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
+                                HStack(spacing: 3) {
+                                    Text(String(format: "%.1f", bet.units))
+                                    Image(systemName: "nairasign.circle.fill")
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.primaryText(colorScheme))
                                 Text(String(format: "@ %.2f", bet.price))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
