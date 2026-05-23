@@ -12,6 +12,7 @@ struct SelectedBet: Identifiable {
     let awayAbbr: String
     let homeAbbr: String
     let gameTime: String?
+    let gameDate: String?
 }
 
 // MARK: - BetGameBanner
@@ -33,44 +34,62 @@ struct BetGameBanner: View {
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
+    private let dateInputFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+    private let dateOutputFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEE, MMM d"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
 
     private var formattedTime: String? {
         guard let raw = bet.gameTime, let d = timeInputFmt.date(from: raw) else { return nil }
         return timeOutputFmt.string(from: d)
     }
 
+    private var formattedDate: String? {
+        guard let raw = bet.gameDate, let d = dateInputFmt.date(from: raw) else { return nil }
+        return dateOutputFmt.string(from: d)
+    }
+
     private var betLabel: String {
+        let teamSide = bet.side == "Away" ? bet.awayAbbr : (bet.side == "Home" ? bet.homeAbbr : bet.side)
         switch bet.type {
         case "SPR":
             if let p = bet.points {
                 let s = p == p.rounded()
                     ? (p >= 0 ? "+\(Int(p))" : "\(Int(p))")
                     : String(format: p >= 0 ? "+%.1f" : "%.1f", p)
-                return "\(bet.side) \(s)"
+                return "\(teamSide) \(s)"
             }
-            return "\(bet.side) SPR"
+            return "\(teamSide) SPR"
         case "O/U":
             if let p = bet.points {
                 let s = p == p.rounded() ? "\(Int(p))" : String(format: "%.1f", p)
-                return "\(bet.side) \(s)"
+                return "\(teamSide) \(s)"
             }
-            return "\(bet.side) O/U"
+            return "\(teamSide) O/U"
         default:
-            return "\(bet.side) \(bet.type)"
+            return "\(teamSide) \(bet.type)"
         }
-    }
-
-    private var impliedPctStr: String {
-        guard bet.price > 0 else { return "" }
-        return "\(Int((1.0 / bet.price * 100.0).rounded()))%"
     }
 
     var body: some View {
         HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(bet.awayAbbr + " @ " + bet.homeAbbr)
                     .font(.headline)
                     .foregroundStyle(theme.primaryText(colorScheme))
+                if let date = formattedDate {
+                    Text(date)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if let time = formattedTime {
                     Text(time)
                         .font(.caption)
@@ -82,15 +101,15 @@ struct BetGameBanner: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(betLabel)
-                    .font(.caption.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(String(format: "%.2f", bet.price))
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                if !impliedPctStr.isEmpty {
-                    Text(impliedPctStr)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(String(format: "%.2f", bet.price))
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                    Text("x")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(theme.accent)
                 }
             }
         }
@@ -305,12 +324,14 @@ private struct GameOddsCard: View {
                     priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice)) {
                         guard let p = odd.mlAwayPrice, let h = odd.mlAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Away", price: p, points: nil,
-                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr, gameTime: odd.gameTime))
+                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
+                                                  gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                     priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "") {
                         guard let p = odd.sprAwayPrice, let h = odd.sprAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Away", price: p, points: odd.sprAwayPoints,
-                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr, gameTime: odd.gameTime))
+                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
+                                                  gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                     priceCapsule(
                         awayIsFav ? odd.underPrice : odd.overPrice,
@@ -322,7 +343,7 @@ private struct GameOddsCard: View {
                         guard let p = price, let h = hash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "O/U", side: awayIsFav ? "Under" : "Over",
                                                   price: p, points: pts, awayAbbr: odd.awayAbbr,
-                                                  homeAbbr: odd.homeAbbr, gameTime: odd.gameTime))
+                                                  homeAbbr: odd.homeAbbr, gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                 }
                 .padding(.horizontal, 12)
@@ -340,12 +361,14 @@ private struct GameOddsCard: View {
                     priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice)) {
                         guard let p = odd.mlHomePrice, let h = odd.mlHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Home", price: p, points: nil,
-                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr, gameTime: odd.gameTime))
+                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
+                                                  gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                     priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "") {
                         guard let p = odd.sprHomePrice, let h = odd.sprHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Home", price: p, points: odd.sprHomePoints,
-                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr, gameTime: odd.gameTime))
+                                                  awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
+                                                  gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                     priceCapsule(
                         awayIsFav ? odd.overPrice : odd.underPrice,
@@ -357,7 +380,7 @@ private struct GameOddsCard: View {
                         guard let p = price, let h = hash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "O/U", side: awayIsFav ? "Over" : "Under",
                                                   price: p, points: pts, awayAbbr: odd.awayAbbr,
-                                                  homeAbbr: odd.homeAbbr, gameTime: odd.gameTime))
+                                                  homeAbbr: odd.homeAbbr, gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                 }
                 .padding(.horizontal, 12)
@@ -383,13 +406,22 @@ private struct BetConfirmationSheet: View {
     let syndicateId: Int
 
     @State private var unitsInput: String = ""
+    @State private var selectedPreset: Double? = nil
+    @State private var customFieldFocused: Bool = false
+    @State private var runner: Runner?
+    @State private var syndicate: Syndicate?
 
-    private var computedUnits: Int { Int(unitsInput) ?? 0 }
-    private var potentialReturn: Double { Double(computedUnits) * bet.price }
+    private let runnerService = RunnerService()
+    private let syndicateService = SyndicateService()
+
+    private var computedUnits: Double { selectedPreset ?? (Double(unitsInput) ?? 0) }
+    private var potentialReturn: Double { computedUnits * bet.price }
     private var impliedPct: String {
         guard bet.price > 0 else { return "—" }
         return "\(Int((1.0 / bet.price * 100.0).rounded()))%"
     }
+
+    private let presets: [Double] = [0.5, 1, 2, 3]
 
     var body: some View {
         NavigationStack {
@@ -399,17 +431,36 @@ private struct BetConfirmationSheet: View {
                 ScrollView {
                     VStack(spacing: 16) {
 
-                        // Reusable bet banner
                         BetGameBanner(bet: bet)
 
-                        // IDs
-                        VStack(spacing: 8) {
-                            infoRow("Bettor ID", "\(bettorId)")
-                            infoRow("Syndicate ID", "\(syndicateId)")
-                            infoRow("Bet Hash", String(bet.betHash.prefix(14)) + "…")
+                        // Syndicate + Runner identity
+                        HStack(spacing: 0) {
+                            HStack(spacing: 8) {
+                                Image(systemName: syndicate?.symbol ?? "house.fill")
+                                    .font(.body)
+                                    .foregroundStyle(ProfileOption.color(for: syndicate?.color ?? ""))
+                                Text(syndicate?.name ?? "Syndicate")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(theme.primaryText(colorScheme))
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Divider().frame(height: 24)
+
+                            HStack(spacing: 8) {
+                                Image(systemName: runner?.symbol ?? "person.fill")
+                                    .font(.body)
+                                    .foregroundStyle(ProfileOption.color(for: runner?.color ?? ""))
+                                Text(runner?.profileName ?? "Runner")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(theme.primaryText(colorScheme))
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
-                        .font(.caption)
-                        .padding()
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                         .background(theme.cardBackground(colorScheme))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
 
@@ -428,25 +479,71 @@ private struct BetConfirmationSheet: View {
                         .background(theme.cardBackground(colorScheme))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                        // Units input
+                        // Wager presets + custom
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Wager")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 4)
-                            HStack(spacing: 10) {
-                                TextField("0", text: $unitsInput)
-                                    .keyboardType(.numberPad)
-                                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                                    .multilineTextAlignment(.center)
-                                    .foregroundStyle(computedUnits > 0 ? theme.primaryText(colorScheme) : .secondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
-                                    .background(theme.cardBackgroundProminent(colorScheme))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                Text("units")
-                                    .font(.headline)
-                                    .foregroundStyle(.secondary)
+
+                            HStack(spacing: 8) {
+                                ForEach(presets, id: \.self) { preset in
+                                    let isSelected = selectedPreset == preset
+                                    Button {
+                                        selectedPreset = preset
+                                        unitsInput = ""
+                                        customFieldFocused = false
+                                    } label: {
+                                        Text(preset == 0.5 ? "½" : "\(Int(preset))")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(isSelected ? theme.accent : theme.primaryText(colorScheme))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 14)
+                                            .background(isSelected ? theme.accent.opacity(0.15) : theme.cardBackground(colorScheme))
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(isSelected ? theme.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+
+                                // Custom field button
+                                let isCustom = selectedPreset == nil
+                                Button {
+                                    selectedPreset = nil
+                                    customFieldFocused = true
+                                } label: {
+                                    if isCustom && customFieldFocused {
+                                        TextField("0", text: $unitsInput)
+                                            .keyboardType(.decimalPad)
+                                            .font(.subheadline.weight(.semibold))
+                                            .multilineTextAlignment(.center)
+                                            .foregroundStyle(theme.primaryText(colorScheme))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 14)
+                                            .background(theme.accent.opacity(0.15))
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(theme.accent.opacity(0.5), lineWidth: 1.5)
+                                            )
+                                    } else {
+                                        Image(systemName: "number")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(isCustom ? theme.accent : theme.primaryText(colorScheme))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 14)
+                                            .background(isCustom ? theme.accent.opacity(0.15) : theme.cardBackground(colorScheme))
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(isCustom ? theme.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                                            )
+                                    }
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
 
@@ -454,7 +551,7 @@ private struct BetConfirmationSheet: View {
                         HStack(spacing: 0) {
                             summaryCell(
                                 "Risked",
-                                computedUnits > 0 ? "\(computedUnits)u" : "—"
+                                computedUnits > 0 ? "\(String(format: "%.4g", computedUnits))u" : "—"
                             )
                             Divider().frame(height: 36)
                             summaryCell(
@@ -508,16 +605,16 @@ private struct BetConfirmationSheet: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .task { await fetchIdentity() }
         }
     }
 
-    @ViewBuilder
-    private func infoRow(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).foregroundStyle(.secondary)
-            Spacer()
-            Text(value).foregroundStyle(theme.primaryText(colorScheme))
-        }
+    private func fetchIdentity() async {
+        async let runnerTask    = try? runnerService.fetchRunner(bettorId: bettorId, syndicateId: syndicateId)
+        async let syndicateTask = try? syndicateService.fetchSyndicate(syndicateId: syndicateId, bettorId: nil)
+        let (runners, syndicates) = await (runnerTask, syndicateTask)
+        runner    = runners?.first
+        syndicate = syndicates?.first
     }
 
     @ViewBuilder
