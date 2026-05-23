@@ -394,7 +394,7 @@ private struct GameOddsCard: View {
 
 // MARK: - BetConfirmationSheet
 
-private struct BetConfirmationSheet: View {
+struct BetConfirmationSheet: View {
     @EnvironmentObject private var theme: AppTheme
     @EnvironmentObject private var betStore: BetStore
     @Environment(\.colorScheme) private var colorScheme
@@ -408,9 +408,11 @@ private struct BetConfirmationSheet: View {
     @State private var wagerUnits: Double = 1.0
     @State private var runner: Runner?
     @State private var syndicate: Syndicate?
+    @State private var showingParlay = false
 
     private let runnerService = RunnerService()
     private let syndicateService = SyndicateService()
+    private let txnService = TxnService()
 
     private var potentialReturn: Double { wagerUnits * bet.price }
     private var impliedPct: String {
@@ -531,6 +533,15 @@ private struct BetConfirmationSheet: View {
                                 .foregroundStyle(theme.primaryText(colorScheme))
                             }
                             Divider().frame(height: 36)
+                            summaryCell("Price") {
+                                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                    Text(String(format: "%.2f", bet.price))
+                                    Text("x").font(.caption.weight(.semibold))
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.accent)
+                            }
+                            Divider().frame(height: 36)
                             summaryCell("Return") {
                                 HStack(spacing: 3) {
                                     Text(wagerLabel(potentialReturn))
@@ -539,12 +550,6 @@ private struct BetConfirmationSheet: View {
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(theme.primaryText(colorScheme))
                             }
-                            Divider().frame(height: 36)
-                            summaryCell("Implied") {
-                                Text(impliedPct)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                            }
                         }
                         .padding(.vertical, 14)
                         .background(theme.cardBackground(colorScheme))
@@ -552,20 +557,10 @@ private struct BetConfirmationSheet: View {
 
                         // Submit
                         Button {
-                            betStore.place(PlacedBet(
-                                id: UUID(),
-                                betHash: bet.betHash,
-                                type: bet.type,
-                                side: bet.side,
-                                price: bet.price,
-                                points: bet.points,
-                                units: wagerUnits,
-                                awayAbbr: bet.awayAbbr,
-                                homeAbbr: bet.homeAbbr,
-                                gameTime: bet.gameTime,
-                                bettorId: bettorId,
-                                syndicateId: syndicateId
-                            ))
+                            let placed = PlacedBet(from: bet, units: wagerUnits, bettorId: bettorId, syndicateId: syndicateId)
+                            betStore.place(placed)
+                            let b = bettorId, s = syndicateId, h = bet.betHash, u = wagerUnits, p = bet.price
+                            Task { try? await txnService.submitBet(bettorId: b, syndicateId: s, betHash: h, unit: u, price: p) }
                             dismiss()
                         } label: {
                             Text("Submit Bet")
@@ -577,11 +572,12 @@ private struct BetConfirmationSheet: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
 
-                        // Save for Parlay
+                        // Bookmark
                         Button {
-                            // TODO: parlay logic
+                            betStore.bookmark(PlacedBet(from: bet, units: wagerUnits, bettorId: bettorId, syndicateId: syndicateId))
+                            dismiss()
                         } label: {
-                            Text("Save for Parlay")
+                            Text("Bookmark")
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity)
@@ -600,6 +596,21 @@ private struct BetConfirmationSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+                if !betStore.bookmarks.isEmpty {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Parlay") { showingParlay = true }
+                            .fontWeight(.semibold)
+                            .foregroundStyle(theme.accent)
+                    }
+                }
+            }
+            .sheet(isPresented: $showingParlay) {
+                ConfirmParlaySheet(
+                    currentBet: bet,
+                    bettorId: bettorId,
+                    syndicateId: syndicateId,
+                    onSubmit: { dismiss() }
+                )
             }
             .task { await fetchIdentity() }
         }
@@ -622,5 +633,23 @@ private struct BetConfirmationSheet: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - SelectedBet + PlacedBet interop
+
+extension SelectedBet {
+    init(placedBet: PlacedBet) {
+        self.init(
+            betHash:  placedBet.betHash,
+            type:     placedBet.type,
+            side:     placedBet.side,
+            price:    placedBet.price,
+            points:   placedBet.points,
+            awayAbbr: placedBet.awayAbbr,
+            homeAbbr: placedBet.homeAbbr,
+            gameTime: placedBet.gameTime,
+            gameDate: placedBet.gameDate
+        )
     }
 }

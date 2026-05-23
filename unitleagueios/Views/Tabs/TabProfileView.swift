@@ -3,16 +3,20 @@ import AuthenticationServices
 
 struct TabProfileView: View {
     @EnvironmentObject private var theme: AppTheme
+    @EnvironmentObject private var betStore: BetStore
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("appleUserName")   private var appleUserName: String   = ""
-    @AppStorage("customUserName")  private var customUserName: String  = ""
-    @AppStorage("profileSymbol")   private var profileSymbol: String   = ProfileOption.symbols[0]
-    @AppStorage("profileSaved")    private var profileSaved: Bool      = false
-    @AppStorage("bettorId")        private var bettorId: Int           = 0
-    @AppStorage("appleSub")        private var appleSub: String        = ""
-    @AppStorage("appleEmail")      private var appleEmail: String      = ""
+    @AppStorage("appleUserName")       private var appleUserName: String   = ""
+    @AppStorage("customUserName")      private var customUserName: String  = ""
+    @AppStorage("profileSymbol")       private var profileSymbol: String   = ProfileOption.symbols[0]
+    @AppStorage("profileSaved")        private var profileSaved: Bool      = false
+    @AppStorage("bettorId")            private var bettorId: Int           = 0
+    @AppStorage("selectedSyndicateId") private var syndicateId: Int        = 0
+    @AppStorage("appleSub")            private var appleSub: String        = ""
+    @AppStorage("appleEmail")          private var appleEmail: String      = ""
     @State private var authError: String?
     @State private var showingEditProfile = false
+    @State private var selectedBookmark: PlacedBet? = nil
+    @State private var showingParlay = false
 
     private var displayName: String {
         customUserName.isEmpty ? appleUserName : customUserName
@@ -30,8 +34,27 @@ struct TabProfileView: View {
                 }
             }
             .tabToolbar()
+            .toolbar {
+                if betStore.bookmarks.count >= 2 {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Parlay") { showingParlay = true }
+                            .fontWeight(.semibold)
+                            .foregroundStyle(theme.accent)
+                    }
+                }
+            }
             .sheet(isPresented: $showingEditProfile) {
                 EditProfileSheet()
+            }
+            .sheet(item: $selectedBookmark) { bookmark in
+                BetConfirmationSheet(
+                    bet: SelectedBet(placedBet: bookmark),
+                    bettorId: bettorId,
+                    syndicateId: syndicateId
+                )
+            }
+            .sheet(isPresented: $showingParlay) {
+                ConfirmParlaySheet(currentBet: nil, bettorId: bettorId, syndicateId: syndicateId)
             }
             .onAppear {
                 if !appleUserName.isEmpty && !profileSaved {
@@ -154,6 +177,52 @@ struct TabProfileView: View {
                 .padding()
                 .background(theme.cardBackground(colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                if !betStore.bookmarks.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Bookmarks")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+
+                        ForEach(betStore.bookmarks) { bookmark in
+                            Button {
+                                selectedBookmark = bookmark
+                            } label: {
+                                HStack(spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("\(bookmark.awayAbbr) @ \(bookmark.homeAbbr)")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(theme.primaryText(colorScheme))
+                                        Text(bookmark.displayLabel)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                        Text(String(format: "%.2f", bookmark.price))
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(theme.accent)
+                                        Text("x")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(theme.accent)
+                                    }
+                                    Button {
+                                        betStore.removeBookmark(bookmark)
+                                    } label: {
+                                        Image(systemName: "bookmark.slash")
+                                            .foregroundStyle(theme.error)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .padding()
+                                .background(theme.cardBackground(colorScheme))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
