@@ -1,6 +1,14 @@
+//
+//  BetConfirmationSheet.swift
+//  unitleagueios
+//
+//  Created by Quinn Fargen on 5/23/26.
+//
+//  Used in SheetConfirmBet & TabProfileView
+
 import SwiftUI
 
-struct ConfirmParlaySheet: View {
+struct SheetConfirmParlay: View {
     @EnvironmentObject private var theme: AppTheme
     @EnvironmentObject private var betStore: BetStore
     @Environment(\.colorScheme) private var colorScheme
