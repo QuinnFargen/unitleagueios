@@ -106,7 +106,7 @@ struct BetGameBanner: View {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(String(format: "%.2f", bet.price))
                         .font(.title2.weight(.bold))
-                        .foregroundStyle(theme.primaryText(colorScheme))
+                        .foregroundStyle(theme.accent)
                     Text("x")
                         .font(.headline.weight(.bold))
                         .foregroundStyle(theme.accent)
@@ -405,23 +405,22 @@ private struct BetConfirmationSheet: View {
     let bettorId: Int
     let syndicateId: Int
 
-    @State private var unitsInput: String = ""
-    @State private var selectedPreset: Double? = nil
-    @State private var customFieldFocused: Bool = false
+    @State private var wagerUnits: Double = 1.0
     @State private var runner: Runner?
     @State private var syndicate: Syndicate?
 
     private let runnerService = RunnerService()
     private let syndicateService = SyndicateService()
 
-    private var computedUnits: Double { selectedPreset ?? (Double(unitsInput) ?? 0) }
-    private var potentialReturn: Double { computedUnits * bet.price }
+    private var potentialReturn: Double { wagerUnits * bet.price }
     private var impliedPct: String {
         guard bet.price > 0 else { return "—" }
         return "\(Int((1.0 / bet.price * 100.0).rounded()))%"
     }
 
-    private let presets: [Double] = [0.5, 1, 2, 3]
+    private func wagerLabel(_ units: Double) -> String {
+        units == 0.5 ? "½" : String(format: "%.4g", units)
+    }
 
     var body: some View {
         NavigationStack {
@@ -479,7 +478,7 @@ private struct BetConfirmationSheet: View {
                         .background(theme.cardBackground(colorScheme))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                        // Wager presets + custom
+                        // Wager stepper
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Wager")
                                 .font(.caption.weight(.semibold))
@@ -487,14 +486,20 @@ private struct BetConfirmationSheet: View {
                                 .padding(.horizontal, 4)
 
                             HStack(spacing: 8) {
-                                ForEach(presets, id: \.self) { preset in
-                                    let isSelected = selectedPreset == preset
-                                    Button {
-                                        selectedPreset = preset
-                                        unitsInput = ""
-                                        customFieldFocused = false
-                                    } label: {
-                                        Text(preset == 0.5 ? "½" : "\(Int(preset))")
+                                Button {
+                                    wagerUnits = max(0.5, wagerUnits - 0.5)
+                                } label: {
+                                    Image(systemName: "minus.circle.fill")
+                                        .font(.title)
+                                        .foregroundStyle(wagerUnits <= 0.5 ? Color.red.opacity(0.3) : Color.red)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(wagerUnits <= 0.5)
+
+                                ForEach([0.5, 1.0], id: \.self) { preset in
+                                    let isSelected = wagerUnits == preset
+                                    Button { wagerUnits = preset } label: {
+                                        Text(preset == 0.5 ? "½" : "1")
                                             .font(.subheadline.weight(.semibold))
                                             .foregroundStyle(isSelected ? theme.accent : theme.primaryText(colorScheme))
                                             .frame(maxWidth: .infinity)
@@ -509,39 +514,12 @@ private struct BetConfirmationSheet: View {
                                     .buttonStyle(.plain)
                                 }
 
-                                // Custom field button
-                                let isCustom = selectedPreset == nil
                                 Button {
-                                    selectedPreset = nil
-                                    customFieldFocused = true
+                                    wagerUnits += 0.5
                                 } label: {
-                                    if isCustom && customFieldFocused {
-                                        TextField("0", text: $unitsInput)
-                                            .keyboardType(.decimalPad)
-                                            .font(.subheadline.weight(.semibold))
-                                            .multilineTextAlignment(.center)
-                                            .foregroundStyle(theme.primaryText(colorScheme))
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 14)
-                                            .background(theme.accent.opacity(0.15))
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(theme.accent.opacity(0.5), lineWidth: 1.5)
-                                            )
-                                    } else {
-                                        Image(systemName: "number")
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(isCustom ? theme.accent : theme.primaryText(colorScheme))
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 14)
-                                            .background(isCustom ? theme.accent.opacity(0.15) : theme.cardBackground(colorScheme))
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(isCustom ? theme.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
-                                            )
-                                    }
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title)
+                                        .foregroundStyle(Color.green)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -549,17 +527,29 @@ private struct BetConfirmationSheet: View {
 
                         // Summary banner
                         HStack(spacing: 0) {
-                            summaryCell(
-                                "Risked",
-                                computedUnits > 0 ? "\(String(format: "%.4g", computedUnits))u" : "—"
-                            )
+                            summaryCell("Risked") {
+                                HStack(spacing: 3) {
+                                    Text(wagerLabel(wagerUnits))
+                                    Image(systemName: "nairasign.circle.fill")
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.primaryText(colorScheme))
+                            }
                             Divider().frame(height: 36)
-                            summaryCell(
-                                "Return",
-                                computedUnits > 0 ? String(format: "%.2fu", potentialReturn) : "—"
-                            )
+                            summaryCell("Return") {
+                                HStack(spacing: 3) {
+                                    Text(wagerLabel(potentialReturn))
+                                    Image(systemName: "nairasign.circle.fill")
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.primaryText(colorScheme))
+                            }
                             Divider().frame(height: 36)
-                            summaryCell("Implied", impliedPct)
+                            summaryCell("Implied") {
+                                Text(impliedPct)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(theme.primaryText(colorScheme))
+                            }
                         }
                         .padding(.vertical, 14)
                         .background(theme.cardBackground(colorScheme))
@@ -567,7 +557,6 @@ private struct BetConfirmationSheet: View {
 
                         // Submit
                         Button {
-                            guard computedUnits > 0 else { return }
                             betStore.place(PlacedBet(
                                 id: UUID(),
                                 betHash: bet.betHash,
@@ -575,7 +564,7 @@ private struct BetConfirmationSheet: View {
                                 side: bet.side,
                                 price: bet.price,
                                 points: bet.points,
-                                units: computedUnits,
+                                units: wagerUnits,
                                 awayAbbr: bet.awayAbbr,
                                 homeAbbr: bet.homeAbbr,
                                 gameTime: bet.gameTime,
@@ -586,13 +575,25 @@ private struct BetConfirmationSheet: View {
                         } label: {
                             Text("Submit Bet")
                                 .font(.body.weight(.semibold))
-                                .foregroundStyle(computedUnits > 0 ? theme.accent : .secondary)
+                                .foregroundStyle(theme.accent)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background((computedUnits > 0 ? theme.accent : Color.secondary).opacity(0.12))
+                                .background(theme.accent.opacity(0.12))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
-                        .disabled(computedUnits == 0)
+
+                        // Save for Parlay
+                        Button {
+                            // TODO: parlay logic
+                        } label: {
+                            Text("Save for Parlay")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.secondary.opacity(0.10))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
@@ -618,11 +619,9 @@ private struct BetConfirmationSheet: View {
     }
 
     @ViewBuilder
-    private func summaryCell(_ label: String, _ value: String) -> some View {
+    private func summaryCell(_ label: String, @ViewBuilder value: () -> some View) -> some View {
         VStack(spacing: 4) {
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(theme.primaryText(colorScheme))
+            value()
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
