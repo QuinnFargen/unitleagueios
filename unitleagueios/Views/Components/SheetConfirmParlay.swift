@@ -157,9 +157,6 @@ struct SheetConfirmParlay: View {
                             let legs = selectedLegs.map { (betHash: $0.betHash, price: $0.price) }
                             let b = bettorId, s = syndicateId, u = wagerUnits
                             Task { try? await txnService.submitParlay(bettorId: b, syndicateId: s, unit: u, legs: legs) }
-                            if let cb = currentBet {
-                                betStore.place(PlacedBet(from: cb, units: wagerUnits, bettorId: bettorId, syndicateId: syndicateId))
-                            }
                             betStore.clearBookmarks()
                             dismiss()
                             onSubmit?()

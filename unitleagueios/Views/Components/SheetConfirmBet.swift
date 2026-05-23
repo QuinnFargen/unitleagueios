@@ -171,8 +171,6 @@ struct SheetConfirmBet: View {
 
                         // Submit
                         Button {
-                            let placed = PlacedBet(from: bet, units: wagerUnits, bettorId: bettorId, syndicateId: syndicateId)
-                            betStore.place(placed)
                             let b = bettorId, s = syndicateId, h = bet.betHash, u = wagerUnits, p = bet.price
                             Task { try? await txnService.submitBet(bettorId: b, syndicateId: s, betHash: h, unit: u, price: p) }
                             dismiss()
