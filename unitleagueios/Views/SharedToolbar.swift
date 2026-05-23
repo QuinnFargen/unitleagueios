@@ -145,7 +145,6 @@ struct TabToolbar: ViewModifier {
     @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int    = 0
     @AppStorage("leagueRank")          private var leagueRank: Int             = 0
     @State private var showingSyndicateSelector = false
-    @State private var showingProfileActions = false
 
     private func rankLabel(_ rank: Int) -> String {
         switch rank {
@@ -178,26 +177,22 @@ struct TabToolbar: ViewModifier {
     }
 
     private var profileTrailingItem: some View {
-        Button { showingProfileActions = true } label: {
-            HStack(spacing: 10) {
-                HStack(spacing: 3) {
-                    Image(systemName: "nairasign.circle.fill")
-                    Text("\(userUnits)").fontWeight(.semibold)
-                }
-                .font(.subheadline)
-                .foregroundStyle(theme.primaryText(colorScheme))
-
-                Image(systemName: profileSymbol)
-                    .font(.title2)
-                    .foregroundStyle(theme.accent)
+        HStack(spacing: 10) {
+            HStack(spacing: 3) {
+                Image(systemName: "nairasign.circle.fill")
+                Text("\(userUnits)").fontWeight(.semibold)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(theme.cardBackground(colorScheme))
-            .clipShape(Capsule())
+            .font(.subheadline)
+            .foregroundStyle(theme.primaryText(colorScheme))
+
+            Image(systemName: profileSymbol)
+                .font(.title2)
+                .foregroundStyle(theme.accent)
         }
-        .buttonStyle(.plain)
-        .fixedSize()
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(theme.cardBackground(colorScheme))
+        .clipShape(Capsule())
     }
 
     func body(content: Content) -> some View {
@@ -226,9 +221,6 @@ struct TabToolbar: ViewModifier {
                     leagueColorName: $leagueColorName,
                     leagueRank: $leagueRank
                 )
-            }
-            .sheet(isPresented: $showingProfileActions) {
-                ProfileActionsSheet()
             }
     }
 }
@@ -345,95 +337,6 @@ private struct SyndicateSelectorSheet: View {
             fetchError = error.localizedDescription
         }
         isLoading = false
-    }
-}
-
-// MARK: - ProfileActionsSheet
-
-private struct ProfileActionsSheet: View {
-    @EnvironmentObject private var theme: AppTheme
-    @EnvironmentObject private var betStore: BetStore
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dismiss) private var dismiss
-
-    private let timeInputFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm:ss"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private let timeOutputFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private func formattedTime(_ raw: String?) -> String {
-        guard let raw, let date = timeInputFormatter.date(from: raw) else { return "—" }
-        return timeOutputFormatter.string(from: date)
-    }
-
-    private func betTypeLabel(_ bet: PlacedBet) -> String {
-        var label = "\(bet.side) \(bet.type)"
-        if let pts = bet.points {
-            let formatted = pts == pts.rounded() ? "\(Int(pts))" : String(format: "%.1f", pts)
-            label += " (\(formatted))"
-        }
-        return label
-    }
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                theme.appBackground(colorScheme).ignoresSafeArea()
-
-                if betStore.bets.isEmpty {
-                    Text("No active bets")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    List(betStore.bets) { bet in
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(bet.awayAbbr) @ \(bet.homeAbbr)")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                                Text(betTypeLabel(bet))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(formattedTime(bet.gameTime))
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                HStack(spacing: 3) {
-                                    Text(String(format: "%.1f", bet.units))
-                                    Image(systemName: "nairasign.circle.fill")
-                                }
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(theme.primaryText(colorScheme))
-                                Text(String(format: "@ %.2f", bet.price))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                }
-            }
-            .navigationTitle("Active Bets")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
     }
 }
 
