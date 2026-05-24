@@ -37,7 +37,7 @@ struct DateNavigationHeader: View {
 
     private let displayFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "EEE, MMM d, yyyy"
+        f.dateFormat = "EEE, MMM d"
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
