@@ -145,6 +145,7 @@ struct TabToolbar: ViewModifier {
     @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int    = 0
     @AppStorage("leagueRank")          private var leagueRank: Int             = 0
     @State private var showingSyndicateSelector = false
+    @State private var showingBookmarks = false
 
     private func rankLabel(_ rank: Int) -> String {
         switch rank {
@@ -177,22 +178,26 @@ struct TabToolbar: ViewModifier {
     }
 
     private var profileTrailingItem: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 3) {
-                Image(systemName: "nairasign.circle.fill")
-                Text("\(userUnits)").fontWeight(.semibold)
-            }
-            .font(.subheadline)
-            .foregroundStyle(theme.primaryText(colorScheme))
+        Button { showingBookmarks = true } label: {
+            HStack(spacing: 10) {
+                HStack(spacing: 3) {
+                    Image(systemName: "nairasign.circle.fill")
+                    Text("\(userUnits)").fontWeight(.semibold)
+                }
+                .font(.subheadline)
+                .foregroundStyle(theme.primaryText(colorScheme))
 
-            Image(systemName: profileSymbol)
-                .font(.title2)
-                .foregroundStyle(theme.accent)
+                Image(systemName: profileSymbol)
+                    .font(.title2)
+                    .foregroundStyle(theme.accent)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(theme.cardBackground(colorScheme))
+            .clipShape(Capsule())
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(theme.cardBackground(colorScheme))
-        .clipShape(Capsule())
+        .buttonStyle(.plain)
+        .fixedSize()
     }
 
     func body(content: Content) -> some View {
@@ -221,6 +226,9 @@ struct TabToolbar: ViewModifier {
                     leagueColorName: $leagueColorName,
                     leagueRank: $leagueRank
                 )
+            }
+            .sheet(isPresented: $showingBookmarks) {
+                SheetBookmarks()
             }
     }
 }

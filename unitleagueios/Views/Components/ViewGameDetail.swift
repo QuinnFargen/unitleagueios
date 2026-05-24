@@ -5,14 +5,16 @@ import SwiftUI
 struct SelectedBet: Identifiable {
     let id = UUID()
     let betHash: String
-    let type: String        // "ML", "SPR", "O/U"
-    let side: String        // "Away", "Home", "Over", "Under"
+    let type: String        // "ML", "SPR", "O/U", or "" when unknown
+    let side: String        // kept for PlacedBet compat; "" when unused
     let price: Double
     let points: Double?     // spread value or O/U total; nil for ML
     let awayAbbr: String
     let homeAbbr: String
     let gameTime: String?
     let gameDate: String?
+    var team: String? = nil  // team abbr from Txn (e.g. "BAL"); preferred over side-logic
+    var unit: Double? = nil  // when set, BetGameBanner shows unit count after price
 }
 
 // MARK: - BetGameBanner
@@ -58,7 +60,7 @@ struct BetGameBanner: View {
     }
 
     private var betLabel: String {
-        let teamSide = bet.side == "Away" ? bet.awayAbbr : (bet.side == "Home" ? bet.homeAbbr : bet.side)
+        let teamSide = bet.team ?? (bet.side == "Away" ? bet.awayAbbr : (bet.side == "Home" ? bet.homeAbbr : bet.side))
         switch bet.type {
         case "SPR":
             if let p = bet.points {
@@ -75,7 +77,7 @@ struct BetGameBanner: View {
             }
             return "\(teamSide) O/U"
         default:
-            return "\(teamSide) \(bet.type)"
+            return bet.type.isEmpty ? teamSide : "\(teamSide) \(bet.type)"
         }
     }
 
@@ -110,6 +112,14 @@ struct BetGameBanner: View {
                     Text("x")
                         .font(.headline.weight(.bold))
                         .foregroundStyle(theme.accent)
+                    if let u = bet.unit {
+                        Text(txnWagerLabel(u))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "nairasign.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -117,6 +127,10 @@ struct BetGameBanner: View {
         .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
+}
+
+private func txnWagerLabel(_ units: Double) -> String {
+    units == 0.5 ? "½" : String(format: "%.4g", units)
 }
 
 // MARK: - ViewGameDetail
