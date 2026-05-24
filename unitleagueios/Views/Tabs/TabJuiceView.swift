@@ -5,8 +5,8 @@ struct TabJuiceView: View {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("bettorId") private var bettorId: Int = 0
 
-    @State private var txnRecords: [TxnRecord] = []
-    @State private var completedRecords: [TxnRecord] = []
+    @State private var txnRecords: [Txn] = []
+    @State private var completedRecords: [Txn] = []
     @State private var syndicates: [Int: Syndicate] = [:]
     @State private var isLoading = false
     @State private var segment: BetSegment = .active
@@ -19,15 +19,15 @@ struct TabJuiceView: View {
         case history = "History"
     }
 
-    private var activeBets: [TxnRecord] {
-        txnRecords.filter { !$0.canceled }
+    private var activeBets: [Txn] {
+        txnRecords.filter { $0.canceled != true }
     }
 
-    private var displayBets: [TxnRecord] {
+    private var displayBets: [Txn] {
         segment == .active ? activeBets : completedRecords
     }
 
-    private var syndicateGroups: [(syndicateId: Int, singles: [TxnRecord], parlays: [[TxnRecord]])] {
+    private var syndicateGroups: [(syndicateId: Int, singles: [Txn], parlays: [[Txn]])] {
         let bySyndicate = Dictionary(grouping: displayBets, by: \.syndicateId)
         return bySyndicate.keys.sorted().map { sid in
             let group = bySyndicate[sid] ?? []
@@ -115,16 +115,15 @@ struct TabJuiceView: View {
         }
     }
 
-    private func cancelBet(_ txn: TxnRecord) {
+    private func cancelBet(_ txn: Txn) {
         Task {
-            try? await txnService.cancelTxn(txnId: txn.id)
-            txnRecords.removeAll { $0.id == txn.id }
+            try? await txnService.cancelTxn(txnId: txn.txnId)
+            txnRecords.removeAll { $0.txnId == txn.txnId }
         }
     }
 
-    private func cancelParlay(_ legs: [TxnRecord]) {
-        guard let txnId = legs.first?.id else { return }
-        let parlayId = legs.first?.parlayId
+    private func cancelParlay(_ legs: [Txn]) {
+        guard let txnId = legs.first?.txnId, let parlayId = legs.first?.parlayId else { return }
         Task {
             try? await txnService.cancelTxn(txnId: txnId)
             txnRecords.removeAll { $0.parlayId == parlayId }
@@ -153,38 +152,28 @@ struct TabJuiceView: View {
 private struct BetBannerRow: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    let txn: TxnRecord
+    let txn: Txn
     var onCancel: (() -> Void)? = nil
 
     @State private var showCancelConfirm = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            BetGameBanner(bet: selectedBet(from: txn))
-            HStack(spacing: 3) {
-                if let won = txn.won {
-                    Circle()
-                        .fill(won ? theme.win : theme.loss)
-                        .frame(width: 7, height: 7)
-                }
-                Text(wagerLabel(txn.unit))
-                Image(systemName: "nairasign.circle.fill")
-                Spacer()
-                if onCancel != nil {
-                    Button { showCancelConfirm = true } label: {
-                        Image(systemName: "xmark.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .confirmationDialog("Cancel this bet?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
-                        Button("Cancel Bet", role: .destructive) { onCancel?() }
-                    }
-                }
+        VStack(alignment: .leading, spacing: 4) {
+            if let won = txn.won {
+                Circle()
+                    .fill(won ? theme.win : theme.loss)
+                    .frame(width: 7, height: 7)
+                    .padding(.horizontal, 4)
             }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 4)
+            Button {
+                if onCancel != nil { showCancelConfirm = true }
+            } label: {
+                BetGameBanner(bet: selectedBet(from: txn))
+            }
+            .buttonStyle(.plain)
+            .confirmationDialog("Cancel this bet?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
+                Button("Cancel Bet", role: .destructive) { onCancel?() }
+            }
         }
     }
 }
@@ -194,7 +183,7 @@ private struct BetBannerRow: View {
 private struct ParlayCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
-    let legs: [TxnRecord]
+    let legs: [Txn]
     var onCancel: (() -> Void)? = nil
 
     @State private var showCancelConfirm = false
@@ -204,88 +193,76 @@ private struct ParlayCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Parlay")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if let won = legs.first?.won {
-                    Circle()
-                        .fill(won ? theme.win : theme.loss)
-                        .frame(width: 7, height: 7)
-                }
-                HStack(spacing: 3) {
-                    Text(wagerLabel(legs.first?.unit ?? 0))
-                    Image(systemName: "nairasign.circle.fill")
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(String(format: "%.2f", combinedOdds))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(theme.accent)
-                    Text("x")
+        Button {
+            if onCancel != nil { showCancelConfirm = true }
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Parlay")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.accent)
-                }
-                if onCancel != nil {
-                    Button { showCancelConfirm = true } label: {
-                        Image(systemName: "xmark.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if let won = legs.first?.won {
+                        Circle()
+                            .fill(won ? theme.win : theme.loss)
+                            .frame(width: 7, height: 7)
                     }
-                    .buttonStyle(.plain)
-                    .confirmationDialog("Cancel this parlay?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
-                        Button("Cancel Parlay", role: .destructive) { onCancel?() }
-                    }
-                }
-            }
-
-            Divider()
-
-            ForEach(legs) { leg in
-                VStack(alignment: .leading, spacing: 6) {
-                    BetGameBanner(bet: selectedBet(from: leg))
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text(String(format: "%.2f", leg.price))
-                            .font(.caption.weight(.semibold))
+                        Text(String(format: "%.2f", combinedOdds))
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(theme.accent)
                         Text("x")
-                            .font(.caption2.weight(.semibold))
+                            .font(.caption.weight(.semibold))
                             .foregroundStyle(theme.accent)
+                        Text(txnWagerLabel(legs.first?.unit ?? 0))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "nairasign.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 4)
+                }
+
+                Divider()
+
+                ForEach(legs) { leg in
+                    BetGameBanner(bet: selectedBet(from: leg))
                 }
             }
+            .padding(14)
+            .background(theme.cardBackground(colorScheme))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(theme.divider(colorScheme), lineWidth: 0.5)
+            )
         }
-        .padding(14)
-        .background(theme.cardBackground(colorScheme))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(theme.divider(colorScheme), lineWidth: 0.5)
-        )
+        .buttonStyle(.plain)
+        .confirmationDialog("Cancel this parlay?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
+            Button("Cancel Parlay", role: .destructive) { onCancel?() }
+        }
     }
 }
 
 // MARK: - Helpers
 
-private func selectedBet(from txn: TxnRecord) -> SelectedBet {
+private func selectedBet(from txn: Txn) -> SelectedBet {
     SelectedBet(
         betHash:  txn.betHash ?? "",
-        type:     txn.type ?? "BET",
-        side:     txn.side ?? "",
+        type:     txn.betType ?? "",
+        side:     "",
         price:    txn.price,
         points:   txn.points,
-        awayAbbr: txn.awayAbbr ?? "—",
-        homeAbbr: txn.homeAbbr ?? "—",
+        awayAbbr: txn.away ?? "—",
+        homeAbbr: txn.home ?? "—",
         gameTime: txn.gameTime,
-        gameDate: txn.gameDate
+        gameDate: txn.gameDate,
+        team:     txn.team,
+        unit:     txn.unit
     )
 }
 
-private func wagerLabel(_ units: Double) -> String {
+private func txnWagerLabel(_ units: Double) -> String {
     units == 0.5 ? "½" : String(format: "%.4g", units)
 }
 

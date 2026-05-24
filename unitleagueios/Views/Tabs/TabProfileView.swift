@@ -14,7 +14,6 @@ struct TabProfileView: View {
     @AppStorage("appleEmail")          private var appleEmail: String      = ""
     @State private var authError: String?
     @State private var showingEditProfile = false
-    @State private var showingBookmarks = false
 
     private var displayName: String {
         customUserName.isEmpty ? appleUserName : customUserName
@@ -34,9 +33,6 @@ struct TabProfileView: View {
             .tabToolbar()
             .sheet(isPresented: $showingEditProfile) {
                 SheetEditProfile()
-            }
-            .sheet(isPresented: $showingBookmarks) {
-                SheetBookmarks()
             }
             .onAppear {
                 if !appleUserName.isEmpty && !profileSaved {
@@ -120,37 +116,32 @@ struct TabProfileView: View {
     private var savedProfileView: some View {
         ScrollView {
             VStack(spacing: 24) {
-                Button {
-                    showingBookmarks = true
-                } label: {
-                    HStack(alignment: .center, spacing: 14) {
-                        Image(systemName: profileSymbol)
-                            .font(.system(size: 28, weight: .semibold))
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: profileSymbol)
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(theme.accent)
+                        .frame(width: 48, height: 48)
+                        .background(theme.cardBackgroundProminent(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    Text(displayName)
+                        .font(.title2).bold()
+                        .foregroundStyle(theme.primaryText(colorScheme))
+
+                    Spacer()
+
+                    Button {
+                        showingEditProfile = true
+                    } label: {
+                        Image(systemName: "pencil.circle")
+                            .font(.title3)
                             .foregroundStyle(theme.accent)
-                            .frame(width: 48, height: 48)
-                            .background(theme.cardBackgroundProminent(colorScheme))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                        Text(displayName)
-                            .font(.title2).bold()
-                            .foregroundStyle(theme.primaryText(colorScheme))
-
-                        Spacer()
-
-                        Button {
-                            showingEditProfile = true
-                        } label: {
-                            Image(systemName: "pencil.circle")
-                                .font(.title3)
-                                .foregroundStyle(theme.accent)
-                        }
-                        .buttonStyle(.plain)
                     }
-                    .padding()
-                    .background(theme.cardBackground(colorScheme))
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                .padding()
+                .background(theme.cardBackground(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
 
                 HStack {
                     Image(systemName: "network")
