@@ -6,18 +6,29 @@ struct TabJuiceView: View {
     @AppStorage("bettorId") private var bettorId: Int = 0
 
     @State private var txnRecords: [TxnRecord] = []
+    @State private var completedRecords: [TxnRecord] = []
     @State private var syndicates: [Int: Syndicate] = [:]
     @State private var isLoading = false
+    @State private var segment: BetSegment = .active
 
     private let txnService = TxnService()
     private let syndicateService = SyndicateService()
+
+    private enum BetSegment: String, CaseIterable {
+        case active = "Active"
+        case history = "History"
+    }
 
     private var activeBets: [TxnRecord] {
         txnRecords.filter { !$0.canceled }
     }
 
+    private var displayBets: [TxnRecord] {
+        segment == .active ? activeBets : completedRecords
+    }
+
     private var syndicateGroups: [(syndicateId: Int, singles: [TxnRecord], parlays: [[TxnRecord]])] {
-        let bySyndicate = Dictionary(grouping: activeBets, by: \.syndicateId)
+        let bySyndicate = Dictionary(grouping: displayBets, by: \.syndicateId)
         return bySyndicate.keys.sorted().map { sid in
             let group = bySyndicate[sid] ?? []
             let singles = group.filter { $0.parlayId == nil }
@@ -34,51 +45,63 @@ struct TabJuiceView: View {
 
                 if isLoading {
                     ProgressView()
-                } else if activeBets.isEmpty {
-                    Text("No active bets")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
                 } else {
                     ScrollView {
                         VStack(spacing: 20) {
-                            // Header
-                            HStack {
-                                Text("Active Bets")
-                                    .font(.title3.weight(.bold))
-                                    .foregroundStyle(theme.primaryText(colorScheme))
-                                Spacer()
-                                Text("\(activeBets.count)")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                            Picker("", selection: $segment) {
+                                ForEach(BetSegment.allCases, id: \.self) { seg in
+                                    Text(seg.rawValue).tag(seg)
+                                }
                             }
+                            .pickerStyle(.segmented)
                             .padding(.horizontal, 16)
 
-                            // Per-syndicate sections
-                            ForEach(syndicateGroups, id: \.syndicateId) { group in
-                                VStack(alignment: .leading, spacing: 10) {
-                                    // Syndicate header
-                                    let syndicate = syndicates[group.syndicateId]
-                                    HStack(spacing: 6) {
-                                        Image(systemName: syndicate?.symbol ?? "house.fill")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(ProfileOption.color(for: syndicate?.color ?? ""))
-                                        Text(syndicate?.name ?? "Syndicate \(group.syndicateId)")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(.horizontal, 4)
-
-                                    // Individual bets
-                                    ForEach(group.singles) { txn in
-                                        BetBannerRow(txn: txn)
-                                    }
-
-                                    // Parlay groups
-                                    ForEach(group.parlays, id: \.first?.parlayId) { legs in
-                                        ParlayCard(legs: legs)
-                                    }
+                            if displayBets.isEmpty {
+                                Text(segment == .active ? "No active bets" : "No bet history")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 40)
+                            } else {
+                                HStack {
+                                    Text(segment == .active ? "Active Bets" : "Bet History")
+                                        .font(.title3.weight(.bold))
+                                        .foregroundStyle(theme.primaryText(colorScheme))
+                                    Spacer()
+                                    Text("\(displayBets.count)")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.secondary)
                                 }
                                 .padding(.horizontal, 16)
+
+                                ForEach(syndicateGroups, id: \.syndicateId) { group in
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        let syndicate = syndicates[group.syndicateId]
+                                        HStack(spacing: 6) {
+                                            Image(systemName: syndicate?.symbol ?? "house.fill")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(ProfileOption.color(for: syndicate?.color ?? ""))
+                                            Text(syndicate?.name ?? "Syndicate \(group.syndicateId)")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .padding(.horizontal, 4)
+
+                                        ForEach(group.singles) { txn in
+                                            BetBannerRow(
+                                                txn: txn,
+                                                onCancel: segment == .active ? { cancelBet(txn) } : nil
+                                            )
+                                        }
+
+                                        ForEach(group.parlays, id: \.first?.parlayId) { legs in
+                                            ParlayCard(
+                                                legs: legs,
+                                                onCancel: segment == .active ? { cancelParlay(legs) } : nil
+                                            )
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                }
                             }
                         }
                         .padding(.top, 16)
@@ -92,12 +115,31 @@ struct TabJuiceView: View {
         }
     }
 
+    private func cancelBet(_ txn: TxnRecord) {
+        Task {
+            try? await txnService.cancelTxn(txnId: txn.id)
+            txnRecords.removeAll { $0.id == txn.id }
+        }
+    }
+
+    private func cancelParlay(_ legs: [TxnRecord]) {
+        guard let txnId = legs.first?.id else { return }
+        let parlayId = legs.first?.parlayId
+        Task {
+            try? await txnService.cancelTxn(txnId: txnId)
+            txnRecords.removeAll { $0.parlayId == parlayId }
+        }
+    }
+
     private func fetchData() async {
         guard bettorId != 0 else { return }
-        isLoading = txnRecords.isEmpty
+        isLoading = txnRecords.isEmpty && completedRecords.isEmpty
         defer { isLoading = false }
-        txnRecords = (try? await txnService.fetchActiveBets(bettorId: bettorId)) ?? []
-        let ids = Set(txnRecords.map(\.syndicateId))
+        async let activeFetch = txnService.fetchActiveBets(bettorId: bettorId)
+        async let completedFetch = txnService.fetchCompletedBets(bettorId: bettorId)
+        txnRecords = (try? await activeFetch) ?? []
+        completedRecords = (try? await completedFetch) ?? []
+        let ids = Set((txnRecords + completedRecords).map(\.syndicateId))
         for sid in ids where syndicates[sid] == nil {
             if let result = try? await syndicateService.fetchSyndicate(syndicateId: sid, bettorId: nil) {
                 syndicates[sid] = result.first
@@ -112,13 +154,33 @@ private struct BetBannerRow: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let txn: TxnRecord
+    var onCancel: (() -> Void)? = nil
+
+    @State private var showCancelConfirm = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             BetGameBanner(bet: selectedBet(from: txn))
             HStack(spacing: 3) {
+                if let won = txn.won {
+                    Circle()
+                        .fill(won ? theme.win : theme.loss)
+                        .frame(width: 7, height: 7)
+                }
                 Text(wagerLabel(txn.unit))
                 Image(systemName: "nairasign.circle.fill")
+                Spacer()
+                if onCancel != nil {
+                    Button { showCancelConfirm = true } label: {
+                        Image(systemName: "xmark.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .confirmationDialog("Cancel this bet?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
+                        Button("Cancel Bet", role: .destructive) { onCancel?() }
+                    }
+                }
             }
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
@@ -133,6 +195,9 @@ private struct ParlayCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let legs: [TxnRecord]
+    var onCancel: (() -> Void)? = nil
+
+    @State private var showCancelConfirm = false
 
     private var combinedOdds: Double {
         legs.map(\.price).reduce(1.0, *)
@@ -140,12 +205,16 @@ private struct ParlayCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Parlay header
             HStack {
                 Text("Parlay")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
+                if let won = legs.first?.won {
+                    Circle()
+                        .fill(won ? theme.win : theme.loss)
+                        .frame(width: 7, height: 7)
+                }
                 HStack(spacing: 3) {
                     Text(wagerLabel(legs.first?.unit ?? 0))
                     Image(systemName: "nairasign.circle.fill")
@@ -160,11 +229,21 @@ private struct ParlayCard: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(theme.accent)
                 }
+                if onCancel != nil {
+                    Button { showCancelConfirm = true } label: {
+                        Image(systemName: "xmark.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .confirmationDialog("Cancel this parlay?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
+                        Button("Cancel Parlay", role: .destructive) { onCancel?() }
+                    }
+                }
             }
 
             Divider()
 
-            // Legs
             ForEach(legs) { leg in
                 VStack(alignment: .leading, spacing: 6) {
                     BetGameBanner(bet: selectedBet(from: leg))
