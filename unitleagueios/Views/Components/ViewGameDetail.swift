@@ -302,23 +302,24 @@ private struct GameOddsCard: View {
         return "\(Int((1.0 / p * 100.0).rounded()))%"
     }
 
-    private func oddsCapsuleColor(_ price: Double, betHash: String?) -> Color {
+    private func oddsCapsuleColor(_ price: Double, betHash: String?, won: Bool?) -> Color {
         guard betHash != nil else { return theme.accent.opacity(0.2) }
+        if let won { return won ? theme.win.opacity(0.7) : theme.loss.opacity(0.7) }
         let distance = min(abs(price - 2.0) * 0.5, 0.85)
         let base = price < 2.0 ? theme.win : theme.loss
         return base.opacity(0.15 + distance)
     }
 
     @ViewBuilder
-    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, onTap: (() -> Void)? = nil) -> some View {
+    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, won: Bool? = nil, onTap: (() -> Void)? = nil) -> some View {
         if let p = price {
             if betHash != nil {
                 Button(action: { onTap?() }) {
-                    priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash)
+                    priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash, won: won)
                 }
                 .buttonStyle(.plain)
             } else {
-                priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash)
+                priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash, won: won)
             }
         } else {
             Text("—")
@@ -329,7 +330,7 @@ private struct GameOddsCard: View {
     }
 
     @ViewBuilder
-    private func priceCapsuleLabel(_ price: Double, subtitle: String, betHash: String?) -> some View {
+    private func priceCapsuleLabel(_ price: Double, subtitle: String, betHash: String?, won: Bool?) -> some View {
         VStack(spacing: 1) {
             Text(formatPrice(price))
                 .font(.caption.weight(.semibold))
@@ -343,7 +344,7 @@ private struct GameOddsCard: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .frame(width: colW)
-        .background(oddsCapsuleColor(price, betHash: betHash))
+        .background(oddsCapsuleColor(price, betHash: betHash, won: won))
         .clipShape(Capsule())
     }
 
@@ -383,13 +384,13 @@ private struct GameOddsCard: View {
                     .foregroundStyle(theme.primaryText(colorScheme))
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice), betHash: odd.mlAwayBetHash) {
+                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice), betHash: odd.mlAwayBetHash, won: odd.mlAwayWon) {
                         guard let p = odd.mlAwayPrice, let h = odd.mlAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Away", price: p, points: nil,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
                                                   gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
-                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "", betHash: odd.sprAwayBetHash) {
+                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "", betHash: odd.sprAwayBetHash, won: odd.sprAwayWon) {
                         guard let p = odd.sprAwayPrice, let h = odd.sprAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Away", price: p, points: odd.sprAwayPoints,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
@@ -398,7 +399,8 @@ private struct GameOddsCard: View {
                     priceCapsule(
                         awayIsFav ? odd.underPrice : odd.overPrice,
                         subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)",
-                        betHash: awayIsFav ? odd.underBetHash : odd.overBetHash
+                        betHash: awayIsFav ? odd.underBetHash : odd.overBetHash,
+                        won: awayIsFav ? odd.underWon : odd.overWon
                     ) {
                         let price = awayIsFav ? odd.underPrice : odd.overPrice
                         let hash  = awayIsFav ? odd.underBetHash : odd.overBetHash
@@ -421,13 +423,13 @@ private struct GameOddsCard: View {
                         .foregroundStyle(theme.primaryText(colorScheme))
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice), betHash: odd.mlHomeBetHash) {
+                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice), betHash: odd.mlHomeBetHash, won: odd.mlHomeWon) {
                         guard let p = odd.mlHomePrice, let h = odd.mlHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Home", price: p, points: nil,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
                                                   gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
-                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "", betHash: odd.sprHomeBetHash) {
+                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "", betHash: odd.sprHomeBetHash, won: odd.sprHomeWon) {
                         guard let p = odd.sprHomePrice, let h = odd.sprHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Home", price: p, points: odd.sprHomePoints,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
@@ -436,7 +438,8 @@ private struct GameOddsCard: View {
                     priceCapsule(
                         awayIsFav ? odd.overPrice : odd.underPrice,
                         subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)",
-                        betHash: awayIsFav ? odd.overBetHash : odd.underBetHash
+                        betHash: awayIsFav ? odd.overBetHash : odd.underBetHash,
+                        won: awayIsFav ? odd.overWon : odd.underWon
                     ) {
                         let price = awayIsFav ? odd.overPrice : odd.underPrice
                         let hash  = awayIsFav ? odd.overBetHash : odd.underBetHash
