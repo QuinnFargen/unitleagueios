@@ -154,10 +154,22 @@ struct ViewGameDetail: View {
     @State private var awayTeam: Team?
     @State private var league: League?
     @State private var selectedBet: SelectedBet?
+    @State private var oddMany: [OddMany] = []
 
     private let oddService = OddsService()
     private let teamService = TeamService()
     private let leagueService = LeagueService()
+    private let oddManyService = OddManyService()
+
+    private var isUpcoming: Bool {
+        let gameDt = odd?.gameDt ?? oddMany.first?.gameDt
+        guard let raw = gameDt else { return false }
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        guard let date = f.date(from: raw) else { return false }
+        return Calendar.current.startOfDay(for: date) >= Calendar.current.startOfDay(for: Date())
+    }
 
     var body: some View {
         ZStack {
@@ -190,6 +202,13 @@ struct ViewGameDetail: View {
                         }
                     }
                     .padding(.horizontal)
+
+                    if isUpcoming && !oddMany.isEmpty {
+                        AllOddsSection(odds: oddMany, awayAbbr: away, homeAbbr: home) { bet in
+                            selectedBet = bet
+                        }
+                        .padding(.horizontal)
+                    }
                 }
                 .padding(.top, 16)
                 .padding(.bottom, 24)
@@ -207,13 +226,15 @@ struct ViewGameDetail: View {
         async let oddsTask = try? oddService.fetchOddBest(gameId: gameId)
         async let teamsTask = try? teamService.fetchTeams(leagueId: leagueId)
         async let leaguesTask = try? leagueService.fetchLeagues()
+        async let oddManyTask = try? oddManyService.fetchOddAll(gameId: gameId)
 
-        let (odds, teams, leagues) = await (oddsTask, teamsTask, leaguesTask)
+        let (odds, teams, leagues, many) = await (oddsTask, teamsTask, leaguesTask, oddManyTask)
 
         odd = odds?.first
         awayTeam = teams?.first { $0.id == awayTeamId }
         homeTeam = teams?.first { $0.id == homeTeamId }
         league = leagues?.first { $0.id == leagueId }
+        oddMany = many ?? []
     }
 }
 
@@ -241,10 +262,29 @@ private struct GameOddsCard: View {
         return f
     }()
 
+    private let dateInputFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    private let dateOutputFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
     private var formattedTime: String? {
         guard let raw = odd.gameTime,
               let date = timeInputFormatter.date(from: raw) else { return nil }
         return timeOutputFormatter.string(from: date)
+    }
+
+    private var formattedDate: String? {
+        guard let d = dateInputFormatter.date(from: odd.gameDt) else { return nil }
+        return dateOutputFormatter.string(from: d)
     }
 
     private var awayIsFav: Bool { (odd.sprAwayPoints ?? 1) < 0 }
@@ -262,39 +302,49 @@ private struct GameOddsCard: View {
         return "\(Int((1.0 / p * 100.0).rounded()))%"
     }
 
-    private func oddsCapsuleColor(_ price: Double) -> Color {
+    private func oddsCapsuleColor(_ price: Double, betHash: String?) -> Color {
+        guard betHash != nil else { return theme.accent.opacity(0.2) }
         let distance = min(abs(price - 2.0) * 0.5, 0.85)
         let base = price < 2.0 ? theme.win : theme.loss
         return base.opacity(0.15 + distance)
     }
 
     @ViewBuilder
-    private func priceCapsule(_ price: Double?, subtitle: String = "", onTap: (() -> Void)? = nil) -> some View {
+    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, onTap: (() -> Void)? = nil) -> some View {
         if let p = price {
-            Button(action: { onTap?() }) {
-                VStack(spacing: 1) {
-                    Text(formatPrice(p))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                    if !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+            if betHash != nil {
+                Button(action: { onTap?() }) {
+                    priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .frame(width: colW)
-                .background(oddsCapsuleColor(p))
-                .clipShape(Capsule())
+                .buttonStyle(.plain)
+            } else {
+                priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash)
             }
-            .buttonStyle(.plain)
         } else {
             Text("—")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(width: colW)
         }
+    }
+
+    @ViewBuilder
+    private func priceCapsuleLabel(_ price: Double, subtitle: String, betHash: String?) -> some View {
+        VStack(spacing: 1) {
+            Text(formatPrice(price))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(theme.primaryText(colorScheme))
+            if !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .frame(width: colW)
+        .background(oddsCapsuleColor(price, betHash: betHash))
+        .clipShape(Capsule())
     }
 
     var body: some View {
@@ -307,11 +357,9 @@ private struct GameOddsCard: View {
 
             VStack(spacing: 0) {
                 HStack(spacing: 4) {
-                    if let time = formattedTime {
-                        Text(time)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text([formattedDate, formattedTime].compactMap { $0 }.joined(separator: " · "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Spacer()
                     ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
                         Text(h)
@@ -335,13 +383,13 @@ private struct GameOddsCard: View {
                     .foregroundStyle(theme.primaryText(colorScheme))
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice)) {
+                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice), betHash: odd.mlAwayBetHash) {
                         guard let p = odd.mlAwayPrice, let h = odd.mlAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Away", price: p, points: nil,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
                                                   gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
-                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "") {
+                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "", betHash: odd.sprAwayBetHash) {
                         guard let p = odd.sprAwayPrice, let h = odd.sprAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Away", price: p, points: odd.sprAwayPoints,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
@@ -349,7 +397,8 @@ private struct GameOddsCard: View {
                     }
                     priceCapsule(
                         awayIsFav ? odd.underPrice : odd.overPrice,
-                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)"
+                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)",
+                        betHash: awayIsFav ? odd.underBetHash : odd.overBetHash
                     ) {
                         let price = awayIsFav ? odd.underPrice : odd.overPrice
                         let hash  = awayIsFav ? odd.underBetHash : odd.overBetHash
@@ -372,13 +421,13 @@ private struct GameOddsCard: View {
                         .foregroundStyle(theme.primaryText(colorScheme))
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice)) {
+                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice), betHash: odd.mlHomeBetHash) {
                         guard let p = odd.mlHomePrice, let h = odd.mlHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Home", price: p, points: nil,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
                                                   gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
-                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "") {
+                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "", betHash: odd.sprHomeBetHash) {
                         guard let p = odd.sprHomePrice, let h = odd.sprHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Home", price: p, points: odd.sprHomePoints,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
@@ -386,7 +435,8 @@ private struct GameOddsCard: View {
                     }
                     priceCapsule(
                         awayIsFav ? odd.overPrice : odd.underPrice,
-                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)"
+                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)",
+                        betHash: awayIsFav ? odd.overBetHash : odd.underBetHash
                     ) {
                         let price = awayIsFav ? odd.overPrice : odd.underPrice
                         let hash  = awayIsFav ? odd.overBetHash : odd.underBetHash
@@ -403,6 +453,204 @@ private struct GameOddsCard: View {
             .background(theme.cardBackground(colorScheme))
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
+    }
+}
+
+
+// MARK: - AllOddsSection
+
+private struct AllOddsSection: View {
+    @EnvironmentObject private var theme: AppTheme
+    @Environment(\.colorScheme) private var colorScheme
+
+    let odds: [OddMany]
+    let awayAbbr: String
+    let homeAbbr: String
+    let onBetSelected: (SelectedBet) -> Void
+
+    @State private var isExpanded = false
+    @State private var selectedBetType = "ML"
+
+    private let colW: CGFloat = 62
+
+    private func formatPrice(_ price: Double) -> String { String(format: "%.2f", price) }
+    private func formatPoints(_ points: Double) -> String {
+        points == points.rounded() ? "\(Int(points))" : String(format: "%.1f", points)
+    }
+
+    private func oddsCapsuleColor(_ price: Double) -> Color {
+        let distance = min(abs(price - 2.0) * 0.5, 0.85)
+        let base = price < 2.0 ? theme.win : theme.loss
+        return base.opacity(0.15 + distance)
+    }
+
+    private func selectedBet(from oddMany: OddMany) -> SelectedBet {
+        let type = (oddMany.betType == "OVER" || oddMany.betType == "UNDER") ? "O/U" : oddMany.betType
+        let side: String
+        if oddMany.teamAbbr == nil {
+            side = oddMany.betType == "OVER" ? "Over" : "Under"
+        } else {
+            side = oddMany.teamAbbr == awayAbbr ? "Away" : "Home"
+        }
+        return SelectedBet(betHash: oddMany.betHash, type: type, side: side,
+                           price: oddMany.price, points: oddMany.points,
+                           awayAbbr: oddMany.awayAbbr, homeAbbr: oddMany.homeAbbr,
+                           gameTime: oddMany.gameTime, gameDate: oddMany.gameDt,
+                           team: oddMany.teamAbbr)
+    }
+
+    private var filteredOdds: [OddMany] {
+        switch selectedBetType {
+        case "ML":   return odds.filter { $0.betType == "ML" }
+        case "SPR":  return odds.filter { $0.betType == "SPR" }
+        case "O/U":  return odds.filter { $0.betType == "OVER" || $0.betType == "UNDER" }
+        default:     return []
+        }
+    }
+
+    private var bookmakers: [String] {
+        Array(Set(filteredOdds.map(\.bookmaker))).sorted()
+    }
+
+    @ViewBuilder
+    private func oddsRow(bookmaker: String) -> some View {
+        let lhsBets = filteredOdds.filter { $0.bookmaker == bookmaker && lhsMatch($0) }
+        let rhsBets = filteredOdds.filter { $0.bookmaker == bookmaker && rhsMatch($0) }
+        let lhs = lhsBets.first
+        let rhs = rhsBets.first
+
+        HStack(spacing: 8) {
+            if let bet = lhs {
+                Button { onBetSelected(selectedBet(from: bet)) } label: {
+                    oddsLabel(bet)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("—").font(.caption).foregroundStyle(.secondary).frame(width: colW)
+            }
+
+            Text(bookmaker)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .lineLimit(1)
+
+            if let bet = rhs {
+                Button { onBetSelected(selectedBet(from: bet)) } label: {
+                    oddsLabel(bet)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("—").font(.caption).foregroundStyle(.secondary).frame(width: colW)
+            }
+        }
+    }
+
+    private func lhsMatch(_ odd: OddMany) -> Bool {
+        switch selectedBetType {
+        case "ML", "SPR": return odd.teamAbbr == awayAbbr
+        case "O/U":        return odd.betType == "OVER"
+        default:           return false
+        }
+    }
+
+    private func rhsMatch(_ odd: OddMany) -> Bool {
+        switch selectedBetType {
+        case "ML", "SPR": return odd.teamAbbr == homeAbbr
+        case "O/U":        return odd.betType == "UNDER"
+        default:           return false
+        }
+    }
+
+    @ViewBuilder
+    private func oddsLabel(_ odd: OddMany) -> some View {
+        VStack(spacing: 1) {
+            Text(formatPrice(odd.price))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(theme.primaryText(colorScheme))
+            if let pts = odd.points {
+                let prefix = odd.betType == "OVER" ? "O" : (odd.betType == "UNDER" ? "U" : "")
+                let label = prefix.isEmpty ? formatPoints(pts) : "\(prefix) \(formatPoints(pts))"
+                Text(label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .frame(width: colW)
+        .background(oddsCapsuleColor(odd.price))
+        .clipShape(Capsule())
+    }
+
+    private var columnHeaders: (String, String) {
+        switch selectedBetType {
+        case "O/U": return ("Over", "Under")
+        default:    return (awayAbbr, homeAbbr)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+            } label: {
+                HStack {
+                    Text("All Odds")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                Divider().background(theme.divider(colorScheme))
+
+                VStack(spacing: 10) {
+                    HStack(spacing: 8) {
+                        ForEach(["ML", "SPR", "O/U"], id: \.self) { t in
+                            FilterChip(label: t, isSelected: selectedBetType == t) {
+                                selectedBetType = t
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 10)
+
+                    let (lhsLabel, rhsLabel) = columnHeaders
+                    HStack(spacing: 8) {
+                        Text(lhsLabel)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: colW, alignment: .center)
+                        Spacer()
+                        Text(rhsLabel)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: colW, alignment: .center)
+                    }
+                    .padding(.horizontal, 14)
+
+                    VStack(spacing: 6) {
+                        ForEach(bookmakers, id: \.self) { bm in
+                            oddsRow(bookmaker: bm)
+                                .padding(.horizontal, 14)
+                        }
+                    }
+                    .padding(.bottom, 12)
+                }
+            }
+        }
+        .background(theme.cardBackground(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
