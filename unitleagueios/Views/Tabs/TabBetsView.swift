@@ -417,14 +417,15 @@ private struct OddBestCard: View {
         return "\(Int((1.0 / p * 100.0).rounded()))%"
     }
 
-    private func oddsCapsuleColor(_ price: Double) -> Color {
+    private func oddsCapsuleColor(_ price: Double, betHash: String?) -> Color {
+        guard betHash != nil else { return theme.accent.opacity(0.2) }
         let distance = min(abs(price - 2.0) * 0.5, 0.85)
         let base = price < 2.0 ? theme.win : theme.loss
         return base.opacity(0.15 + distance)
     }
 
     @ViewBuilder
-    private func priceCapsule(_ price: Double?, subtitle: String = "") -> some View {
+    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil) -> some View {
         if let p = price {
             VStack(spacing: 1) {
                 Text(formatPrice(p))
@@ -439,7 +440,7 @@ private struct OddBestCard: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .frame(width: colW)
-            .background(oddsCapsuleColor(p))
+            .background(oddsCapsuleColor(p, betHash: betHash))
             .clipShape(Capsule())
         } else {
             Text("—")
@@ -495,11 +496,12 @@ private struct OddBestCard: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(theme.primaryText(colorScheme))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice))
-                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "")
+                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice), betHash: odd.mlAwayBetHash)
+                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "", betHash: odd.sprAwayBetHash)
                     priceCapsule(
                         awayIsFav ? odd.underPrice : odd.overPrice,
-                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)"
+                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)",
+                        betHash: awayIsFav ? odd.underBetHash : odd.overBetHash
                     )
                 }
 
@@ -508,11 +510,12 @@ private struct OddBestCard: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(theme.primaryText(colorScheme))
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice))
-                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "")
+                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice), betHash: odd.mlHomeBetHash)
+                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "", betHash: odd.sprHomeBetHash)
                     priceCapsule(
                         awayIsFav ? odd.overPrice : odd.underPrice,
-                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)"
+                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)",
+                        betHash: awayIsFav ? odd.overBetHash : odd.underBetHash
                     )
                 }
             }
@@ -523,9 +526,11 @@ private struct OddBestCard: View {
         let awayPrice: Double?
         let awayBetLabel: String
         let awayMLPct: String
+        let awayBetHash: String?
         let homePrice: Double?
         let homeBetLabel: String
         let homeMLPct: String
+        let homeBetHash: String?
     }
 
     private func singleData() -> SingleData {
@@ -533,26 +538,32 @@ private struct OddBestCard: View {
         case "ML":
             return SingleData(
                 awayPrice: odd.mlAwayPrice, awayBetLabel: "", awayMLPct: impliedPct(odd.mlAwayPrice),
-                homePrice: odd.mlHomePrice, homeBetLabel: "", homeMLPct: impliedPct(odd.mlHomePrice)
+                awayBetHash: odd.mlAwayBetHash,
+                homePrice: odd.mlHomePrice, homeBetLabel: "", homeMLPct: impliedPct(odd.mlHomePrice),
+                homeBetHash: odd.mlHomeBetHash
             )
         case "SPR":
             return SingleData(
                 awayPrice: odd.sprAwayPrice,
                 awayBetLabel: odd.sprAwayPoints.map(formatPoints) ?? "",
                 awayMLPct: impliedPct(odd.sprAwayPrice),
+                awayBetHash: odd.sprAwayBetHash,
                 homePrice: odd.sprHomePrice,
                 homeBetLabel: odd.sprHomePoints.map(formatPoints) ?? "",
-                homeMLPct: impliedPct(odd.sprHomePrice)
+                homeMLPct: impliedPct(odd.sprHomePrice),
+                homeBetHash: odd.sprHomeBetHash
             )
         case "O/U":
             let total = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
             return SingleData(
                 awayPrice: odd.overPrice, awayBetLabel: "O \(total)", awayMLPct: impliedPct(odd.overPrice),
-                homePrice: odd.underPrice, homeBetLabel: "U \(total)", homeMLPct: impliedPct(odd.underPrice)
+                awayBetHash: odd.overBetHash,
+                homePrice: odd.underPrice, homeBetLabel: "U \(total)", homeMLPct: impliedPct(odd.underPrice),
+                homeBetHash: odd.underBetHash
             )
         default:
-            return SingleData(awayPrice: nil, awayBetLabel: "", awayMLPct: "",
-                              homePrice: nil, homeBetLabel: "", homeMLPct: "")
+            return SingleData(awayPrice: nil, awayBetLabel: "", awayMLPct: "", awayBetHash: nil,
+                              homePrice: nil, homeBetLabel: "", homeMLPct: "", homeBetHash: nil)
         }
     }
 
@@ -566,7 +577,7 @@ private struct OddBestCard: View {
                 .frame(width: 28)
 
             VStack(spacing: 2) {
-                priceCapsule(d.awayPrice)
+                priceCapsule(d.awayPrice, betHash: d.awayBetHash)
                 if !d.awayBetLabel.isEmpty {
                     Text(d.awayBetLabel)
                         .font(.caption2)
@@ -598,7 +609,7 @@ private struct OddBestCard: View {
             }
 
             VStack(spacing: 2) {
-                priceCapsule(d.homePrice)
+                priceCapsule(d.homePrice, betHash: d.homeBetHash)
                 if !d.homeBetLabel.isEmpty {
                     Text(d.homeBetLabel)
                         .font(.caption2)
