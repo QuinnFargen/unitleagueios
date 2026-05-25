@@ -212,13 +212,13 @@ private struct ParlayCard: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(theme.accent)
                         Text("x")
-                            .font(.caption.weight(.semibold))
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(theme.accent)
                         Text(txnWagerLabel(legs.first?.unit ?? 0))
-                            .font(.caption.weight(.semibold))
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)
                         Image(systemName: "nairasign.circle.fill")
-                            .font(.caption.weight(.semibold))
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)
                     }
                 }

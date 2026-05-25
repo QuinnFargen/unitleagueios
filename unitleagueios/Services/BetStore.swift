@@ -20,6 +20,27 @@ final class BetStore: ObservableObject {
         persistBookmarks()
     }
 
+    func bookmarkParlay(_ legs: [PlacedBet]) {
+        let groupId = UUID()
+        for leg in legs {
+            let tagged = PlacedBet(
+                betHash: leg.betHash, type: leg.type, side: leg.side,
+                price: leg.price, points: leg.points, units: leg.units,
+                awayAbbr: leg.awayAbbr, homeAbbr: leg.homeAbbr,
+                gameTime: leg.gameTime, gameDate: leg.gameDate,
+                bettorId: leg.bettorId, syndicateId: leg.syndicateId,
+                parlayGroupId: groupId
+            )
+            bookmarks.append(tagged)
+        }
+        persistBookmarks()
+    }
+
+    func removeBookmarkParlay(groupId: UUID) {
+        bookmarks.removeAll { $0.parlayGroupId == groupId }
+        persistBookmarks()
+    }
+
     func clearBookmarks() {
         bookmarks = []
         persistBookmarks()

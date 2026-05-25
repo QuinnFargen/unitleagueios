@@ -18,13 +18,24 @@ struct SheetConfirmParlay: View {
     let bettorId: Int
     let syndicateId: Int
     var onSubmit: (() -> Void)? = nil
+    var savedLegs: [PlacedBet]? = nil
 
     // Stable snapshot of legs (UUID-stable for selection tracking)
     @State private var allLegs: [PlacedBet] = []
     @State private var selectedIds: Set<UUID> = []
     @State private var wagerUnits: Double = 1.0
 
+    @State private var runner: Runner?
+    @State private var syndicate: Syndicate?
+    @State private var localSyndicateId: Int = 0
+    @State private var showingSyndicateSelector = false
+    @State private var selectorSymbol: String = "house.fill"
+    @State private var selectorColorName: String = ""
+    @State private var selectorRank: Int = 0
+
     private let txnService = TxnService()
+    private let runnerService = RunnerService()
+    private let syndicateService = SyndicateService()
 
     private var selectedLegs: [PlacedBet] {
         allLegs.filter { selectedIds.contains($0.id) }
@@ -35,6 +46,11 @@ struct SheetConfirmParlay: View {
     }
 
     private var potentialReturn: Double { wagerUnits * combinedOdds }
+
+    private var impliedPct: String {
+        guard combinedOdds > 0 else { return "—" }
+        return "\(Int((1.0 / combinedOdds * 100.0).rounded()))%"
+    }
 
     private func wagerLabel(_ units: Double) -> String {
         units == 0.5 ? "½" : String(format: "%.4g", units)
@@ -47,6 +63,45 @@ struct SheetConfirmParlay: View {
 
                 ScrollView {
                     VStack(spacing: 16) {
+
+                        // Syndicate + Runner identity
+                        HStack(spacing: 0) {
+                            Button {
+                                showingSyndicateSelector = true
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: syndicate?.symbol ?? "house.fill")
+                                        .font(.body)
+                                        .foregroundStyle(ProfileOption.color(for: syndicate?.color ?? ""))
+                                    Text(syndicate?.name ?? "Syndicate")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(theme.primaryText(colorScheme))
+                                        .lineLimit(1)
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Divider().frame(height: 24)
+
+                            HStack(spacing: 8) {
+                                Image(systemName: runner?.symbol ?? "person.fill")
+                                    .font(.body)
+                                    .foregroundStyle(ProfileOption.color(for: runner?.color ?? ""))
+                                Text(runner?.profileName ?? "Runner")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(theme.primaryText(colorScheme))
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
 
                         // Leg list with selection toggles
                         VStack(spacing: 10) {
@@ -105,6 +160,12 @@ struct SheetConfirmParlay: View {
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(theme.primaryText(colorScheme))
                             }
+                            Divider().frame(height: 36)
+                            summaryCell("Implied") {
+                                Text(impliedPct)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         .padding(.vertical, 14)
                         .background(theme.cardBackground(colorScheme))
@@ -155,20 +216,51 @@ struct SheetConfirmParlay: View {
                         // Submit Parlay
                         Button {
                             let legs = selectedLegs.map { (betHash: $0.betHash, price: $0.price) }
-                            let b = bettorId, s = syndicateId, u = wagerUnits
+                            let b = bettorId, s = localSyndicateId, u = wagerUnits
                             let gameDt = selectedLegs.compactMap(\.gameDate).sorted().first
                             Task { try? await txnService.submitParlay(bettorId: b, syndicateId: s, unit: u, legs: legs, gameDt: gameDt) }
                             betStore.clearBookmarks()
                             dismiss()
                             onSubmit?()
                         } label: {
-                            Text("Submit Parlay")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(selectedLegs.count >= 2 ? theme.accent : theme.accent.opacity(0.4))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(theme.accent.opacity(selectedLegs.count >= 2 ? 0.12 : 0.06))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            HStack(spacing: 6) {
+                                Image(systemName: "lock.fill")
+                                Text("Submit Parlay")
+                            }
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(selectedLegs.count >= 2 ? theme.accent : theme.accent.opacity(0.4))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(theme.accent.opacity(selectedLegs.count >= 2 ? 0.12 : 0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .disabled(selectedLegs.count < 2)
+
+                        // Bookmark Parlay
+                        Button {
+                            let parlayLegs = selectedLegs.map { leg in
+                                PlacedBet(
+                                    betHash: leg.betHash, type: leg.type, side: leg.side,
+                                    price: leg.price, points: leg.points, units: wagerUnits,
+                                    awayAbbr: leg.awayAbbr, homeAbbr: leg.homeAbbr,
+                                    gameTime: leg.gameTime, gameDate: leg.gameDate,
+                                    bettorId: bettorId, syndicateId: localSyndicateId
+                                )
+                            }
+                            betStore.bookmarkParlay(parlayLegs)
+                            dismiss()
+                            onSubmit?()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "bookmark.fill")
+                                Text("Bookmark Parlay")
+                            }
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(selectedLegs.count >= 2 ? .secondary : Color.secondary.opacity(0.4))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.secondary.opacity(selectedLegs.count >= 2 ? 0.10 : 0.05))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         .disabled(selectedLegs.count < 2)
                     }
@@ -183,15 +275,44 @@ struct SheetConfirmParlay: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showingSyndicateSelector) {
+                SheetSyndicateSelector(
+                    bettorId: bettorId,
+                    selectedSyndicateId: $localSyndicateId,
+                    leagueSymbol: $selectorSymbol,
+                    leagueColorName: $selectorColorName,
+                    leagueRank: $selectorRank
+                )
+            }
             .onAppear {
-                var legs = betStore.bookmarks
-                if let cb = currentBet {
-                    legs.append(PlacedBet(from: cb, units: 0, bettorId: bettorId, syndicateId: syndicateId))
+                localSyndicateId = syndicateId
+                if let saved = savedLegs {
+                    allLegs = saved
+                    selectedIds = Set(saved.map(\.id))
+                } else {
+                    // Only pull straight-bet bookmarks (no parlay-group legs)
+                    var legs = betStore.bookmarks.filter { $0.parlayGroupId == nil }
+                    if let cb = currentBet {
+                        legs.append(PlacedBet(from: cb, units: 0, bettorId: bettorId, syndicateId: syndicateId))
+                    }
+                    allLegs = legs
+                    selectedIds = Set(legs.map(\.id))
                 }
-                allLegs = legs
-                selectedIds = Set(legs.map(\.id))
+            }
+            .task { await fetchIdentity() }
+            .onChange(of: localSyndicateId) {
+                Task { await fetchIdentity() }
             }
         }
+    }
+
+    private func fetchIdentity() async {
+        let sid = localSyndicateId
+        async let runnerTask    = try? runnerService.fetchRunner(bettorId: bettorId, syndicateId: sid)
+        async let syndicateTask = try? syndicateService.fetchSyndicate(syndicateId: sid, bettorId: nil)
+        let (runners, syndicates) = await (runnerTask, syndicateTask)
+        runner    = runners?.first
+        syndicate = syndicates?.first
     }
 
     @ViewBuilder

@@ -14,23 +14,26 @@ struct PlacedBet: Codable, Identifiable {
     let gameDate: String?   // raw "yyyy-MM-dd" from API
     let bettorId: Int
     let syndicateId: Int
+    let parlayGroupId: UUID? // nil = straight bet; shared UUID identifies parlay legs
 
     init(id: UUID = UUID(), betHash: String, type: String, side: String, price: Double,
          points: Double?, units: Double, awayAbbr: String, homeAbbr: String,
-         gameTime: String?, gameDate: String?, bettorId: Int, syndicateId: Int) {
-        self.id          = id
-        self.betHash     = betHash
-        self.type        = type
-        self.side        = side
-        self.price       = price
-        self.points      = points
-        self.units       = units
-        self.awayAbbr    = awayAbbr
-        self.homeAbbr    = homeAbbr
-        self.gameTime    = gameTime
-        self.gameDate    = gameDate
-        self.bettorId    = bettorId
-        self.syndicateId = syndicateId
+         gameTime: String?, gameDate: String?, bettorId: Int, syndicateId: Int,
+         parlayGroupId: UUID? = nil) {
+        self.id            = id
+        self.betHash       = betHash
+        self.type          = type
+        self.side          = side
+        self.price         = price
+        self.points        = points
+        self.units         = units
+        self.awayAbbr      = awayAbbr
+        self.homeAbbr      = homeAbbr
+        self.gameTime      = gameTime
+        self.gameDate      = gameDate
+        self.bettorId      = bettorId
+        self.syndicateId   = syndicateId
+        self.parlayGroupId = parlayGroupId
     }
 
     var displayLabel: String {
@@ -44,20 +47,22 @@ struct PlacedBet: Codable, Identifiable {
 }
 
 extension PlacedBet {
-    init(from selected: SelectedBet, units: Double, bettorId: Int, syndicateId: Int) {
+    init(from selected: SelectedBet, units: Double, bettorId: Int, syndicateId: Int,
+         parlayGroupId: UUID? = nil) {
         self.init(
-            betHash:     selected.betHash,
-            type:        selected.type,
-            side:        selected.side,
-            price:       selected.price,
-            points:      selected.points,
-            units:       units,
-            awayAbbr:    selected.awayAbbr,
-            homeAbbr:    selected.homeAbbr,
-            gameTime:    selected.gameTime,
-            gameDate:    selected.gameDate,
-            bettorId:    bettorId,
-            syndicateId: syndicateId
+            betHash:       selected.betHash,
+            type:          selected.type,
+            side:          selected.side,
+            price:         selected.price,
+            points:        selected.points,
+            units:         units,
+            awayAbbr:      selected.awayAbbr,
+            homeAbbr:      selected.homeAbbr,
+            gameTime:      selected.gameTime,
+            gameDate:      selected.gameDate,
+            bettorId:      bettorId,
+            syndicateId:   syndicateId,
+            parlayGroupId: parlayGroupId
         )
     }
 }
