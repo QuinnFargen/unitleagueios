@@ -304,7 +304,7 @@ private struct GameOddsCard: View {
 
     private func oddsCapsuleColor(_ price: Double, betHash: String?, won: Bool?) -> Color {
         guard betHash != nil else { return theme.accent.opacity(0.2) }
-        if let won { return won ? theme.win.opacity(0.7) : theme.loss.opacity(0.7) }
+        if let won { return won ? theme.accent.opacity(0.7) : theme.chipUnselected(colorScheme) }
         let distance = min(abs(price - 2.0) * 0.5, 0.85)
         let base = price < 2.0 ? theme.win : theme.loss
         return base.opacity(0.15 + distance)
