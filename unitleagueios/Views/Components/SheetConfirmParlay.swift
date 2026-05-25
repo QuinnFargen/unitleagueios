@@ -13,6 +13,7 @@ struct SheetConfirmParlay: View {
     @EnvironmentObject private var betStore: BetStore
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("unitBalance") private var unitBalance: Int = 100
 
     let currentBet: SelectedBet?
     let bettorId: Int
@@ -64,6 +65,35 @@ struct SheetConfirmParlay: View {
                 ScrollView {
                     VStack(spacing: 16) {
 
+                        // Leg list with selection toggles
+                        VStack(spacing: 10) {
+                            ForEach(allLegs) { leg in
+                                let isCurrentBet = leg.betHash == currentBet?.betHash
+                                let isSelected   = selectedIds.contains(leg.id)
+
+                                Button {
+                                    if isSelected { selectedIds.remove(leg.id) }
+                                    else          { selectedIds.insert(leg.id) }
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        BetGameBanner(bet: SelectedBet(placedBet: leg))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 14)
+                                                    .strokeBorder(
+                                                        isCurrentBet ? theme.accent.opacity(0.6) : .clear,
+                                                        lineWidth: 1.5
+                                                    )
+                                            )
+
+                                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                            .font(.title2)
+                                            .foregroundStyle(isSelected ? theme.accent : Color.secondary.opacity(0.4))
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
                         // Syndicate + Runner identity
                         HStack(spacing: 0) {
                             Button {
@@ -103,34 +133,20 @@ struct SheetConfirmParlay: View {
                         .background(theme.cardBackground(colorScheme))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                        // Leg list with selection toggles
-                        VStack(spacing: 10) {
-                            ForEach(allLegs) { leg in
-                                let isCurrentBet = leg.betHash == currentBet?.betHash
-                                let isSelected   = selectedIds.contains(leg.id)
-
-                                Button {
-                                    if isSelected { selectedIds.remove(leg.id) }
-                                    else          { selectedIds.insert(leg.id) }
-                                } label: {
-                                    HStack(spacing: 12) {
-                                        BetGameBanner(bet: SelectedBet(placedBet: leg))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 14)
-                                                    .strokeBorder(
-                                                        isCurrentBet ? theme.accent.opacity(0.6) : .clear,
-                                                        lineWidth: 1.5
-                                                    )
-                                            )
-
-                                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                            .font(.title2)
-                                            .foregroundStyle(isSelected ? theme.accent : Color.secondary.opacity(0.4))
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                            }
+                        // Balance
+                        HStack {
+                            Text("Current Balance")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(unitBalance) units")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.primaryText(colorScheme))
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(theme.cardBackground(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
 
                         // Summary banner
                         HStack(spacing: 0) {

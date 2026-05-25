@@ -2,8 +2,10 @@ import SwiftUI
 
 struct TabBetsView: View {
     @EnvironmentObject private var theme: AppTheme
+    @EnvironmentObject private var betStore: BetStore
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedDate: Date = .now
+    @State private var showingBookmarks = false
     @State private var selectedLeagueId: Int? = nil
     @State private var selectedTeamId: Int? = nil
     @State private var selectedBetType: String = "None"
@@ -112,7 +114,7 @@ struct TabBetsView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
-                    // Bet type filter
+                    // Bet type filter + bookmark
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(["None", "ALL", "ML", "SPR", "O/U"], id: \.self) { betType in
@@ -122,6 +124,24 @@ struct TabBetsView: View {
                                 ) {
                                     selectedBetType = betType
                                 }
+                            }
+
+                            Button {
+                                showingBookmarks = true
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "bookmark.fill")
+                                    if !betStore.bookmarks.isEmpty {
+                                        Text("\(betStore.bookmarks.count)")
+                                            .font(.caption2.weight(.bold))
+                                    }
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(betStore.bookmarks.isEmpty ? theme.primaryText(colorScheme) : theme.accent)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 6)
+                                .background(betStore.bookmarks.isEmpty ? theme.chipUnselected(colorScheme) : theme.accent.opacity(0.15))
+                                .clipShape(Capsule())
                             }
                         }
                         .padding(.horizontal)
@@ -212,6 +232,9 @@ struct TabBetsView: View {
                     }
                 }
                 .animation(.easeInOut(duration: 0.2), value: teams.isEmpty)
+                .sheet(isPresented: $showingBookmarks) {
+                    SheetBookmarks()
+                }
                 .gesture(
                     DragGesture(minimumDistance: 40, coordinateSpace: .local)
                         .onEnded { value in
@@ -589,4 +612,5 @@ private struct OddBestCard: View {
 #Preview {
     TabBetsView()
         .environmentObject(AppTheme())
+        .environmentObject(BetStore())
 }
