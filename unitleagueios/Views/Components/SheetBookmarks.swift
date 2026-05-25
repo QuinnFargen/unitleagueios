@@ -23,6 +23,29 @@ struct SheetBookmarks: View {
 
     private var isEmpty: Bool { singles.isEmpty && parlayGroups.isEmpty }
 
+    private func betLabel(for bet: PlacedBet) -> String {
+        switch bet.type {
+        case "SPR":
+            let team = bet.side == "Away" ? bet.awayAbbr : (bet.side == "Home" ? bet.homeAbbr : bet.side)
+            if let p = bet.points {
+                let s = p == p.rounded()
+                    ? (p >= 0 ? "+\(Int(p))" : "\(Int(p))")
+                    : String(format: p >= 0 ? "+%.1f" : "%.1f", p)
+                return "\(team) \(s)"
+            }
+            return "\(team) SPR"
+        case "O/U":
+            if let p = bet.points {
+                let s = p == p.rounded() ? "\(Int(p))" : String(format: "%.1f", p)
+                return "\(bet.side) \(s)"
+            }
+            return bet.side.isEmpty ? "O/U" : "\(bet.side) O/U"
+        default:
+            let team = bet.side == "Away" ? bet.awayAbbr : (bet.side == "Home" ? bet.homeAbbr : bet.side)
+            return team.isEmpty ? bet.type : "\(team) \(bet.type)"
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -45,7 +68,7 @@ struct SheetBookmarks: View {
                                             Text("\(bookmark.awayAbbr) @ \(bookmark.homeAbbr)")
                                                 .font(.subheadline.weight(.semibold))
                                                 .foregroundStyle(theme.primaryText(colorScheme))
-                                            Text(bookmark.displayLabel)
+                                            Text(betLabel(for: bookmark))
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
                                         }
@@ -109,9 +132,14 @@ struct SheetBookmarks: View {
 
                                         ForEach(group.legs) { leg in
                                             HStack {
-                                                Text("\(leg.awayAbbr) @ \(leg.homeAbbr)")
-                                                    .font(.caption.weight(.semibold))
-                                                    .foregroundStyle(theme.primaryText(colorScheme))
+                                                VStack(alignment: .leading, spacing: 1) {
+                                                    Text("\(leg.awayAbbr) @ \(leg.homeAbbr)")
+                                                        .font(.caption.weight(.semibold))
+                                                        .foregroundStyle(theme.primaryText(colorScheme))
+                                                    Text(betLabel(for: leg))
+                                                        .font(.caption2)
+                                                        .foregroundStyle(.secondary)
+                                                }
                                                 Spacer()
                                                 Text(String(format: "%.2f", leg.price))
                                                     .font(.caption.weight(.semibold))
