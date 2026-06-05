@@ -18,7 +18,7 @@ struct Game: Codable, Identifiable {
         case id         = "game_id"
         case home, away
         case gameDate   = "game_dt"
-        case gameTime   = "game_time"
+        case gameTime   = "game_ts"
         case homeScore  = "h"
         case awayScore  = "a"
         case winner

@@ -24,7 +24,7 @@ struct OddMany: Codable, Identifiable {
         case gameId = "game_id"
         case leagueId = "league_id"
         case gameDt = "game_dt"
-        case gameTime = "game_time"
+        case gameTime = "game_ts"
         case homeAbbr = "home_abbr"
         case awayAbbr = "away_abbr"
         case teamId = "team_id"

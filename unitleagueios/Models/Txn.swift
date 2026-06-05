@@ -39,7 +39,7 @@ struct Txn: Codable, Identifiable {
         case cancelTs        = "cancel_ts"
         case insertDt        = "insert_dt"
         case betType         = "bet_type"
-        case gameTime        = "game_time"
+        case gameTime        = "game_ts"
         case gameDate        = "game_dt"
         case gameId          = "game_id"
         case betConcat       = "bet_concat"

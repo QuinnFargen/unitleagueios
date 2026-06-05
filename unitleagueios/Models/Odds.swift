@@ -62,7 +62,7 @@ struct Odds: Codable, Identifiable {
         case leagueId = "league_id"
         case gameConcat = "game_concat"
         case gameDt = "game_dt"
-        case gameTime = "game_time"
+        case gameTime = "game_ts"
         case homeAbbr = "home_abbr"
         case awayAbbr = "away_abbr"
         case homeTeamId = "home_team_id"
