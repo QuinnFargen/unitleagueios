@@ -433,10 +433,10 @@ private struct OddBestCard: View {
     }
 
     @ViewBuilder
-    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, won: Bool? = nil) -> some View {
+    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, won: Bool? = nil, displayOverride: String? = nil) -> some View {
         if let p = price {
             VStack(spacing: 1) {
-                Text(formatPrice(p))
+                Text(displayOverride ?? formatPrice(p))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(theme.primaryText(colorScheme))
                 if !subtitle.isEmpty {
@@ -473,7 +473,10 @@ private struct OddBestCard: View {
 
     @ViewBuilder
     private var allModeLayout: some View {
+        let scoreW: CGFloat = 28
         let ouTotal = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
+        let awayOUWon = awayIsFav ? odd.underWon : odd.overWon
+        let homeOUWon = awayIsFav ? odd.overWon : odd.underWon
         HStack(alignment: .center, spacing: 10) {
             Image(systemName: odd.sportIcon)
                 .font(.title)
@@ -488,6 +491,7 @@ private struct OddBestCard: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
+                    Spacer().frame(width: scoreW)
                     ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
                         Text(h)
                             .font(.caption.weight(.semibold))
@@ -497,61 +501,56 @@ private struct OddBestCard: View {
                 }
 
                 HStack(spacing: 4) {
-                    HStack(spacing: 0) {
-                        Text("@ ").opacity(0)
-                        Text(odd.awayAbbr)
-                        if let s = scores {
-                            Text(" \(s.away)")
-                                .foregroundStyle(.secondary)
-                        }
+                    Text(odd.awayAbbr)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let s = scores {
+                        Text("\(s.away)")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: scoreW, alignment: .trailing)
+                    } else {
+                        Spacer().frame(width: scoreW)
                     }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice), betHash: odd.mlAwayBetHash, won: odd.mlAwayWon)
-                    priceCapsule(odd.sprAwayPrice, subtitle: {
-                        let line = odd.sprAwayPoints.map(formatPoints) ?? ""
-                        if let m = odd.margin { return "\(line) (\(formatPoints(m)))" }
-                        return line
-                    }(), betHash: odd.sprAwayBetHash, won: odd.sprAwayWon)
+                    priceCapsule(odd.sprAwayPrice,
+                                 subtitle: odd.sprAwayPoints.map(formatPoints) ?? "",
+                                 betHash: odd.sprAwayBetHash, won: odd.sprAwayWon,
+                                 displayOverride: odd.sprAwayWon == false ? odd.margin.map(formatPoints) : nil)
                     priceCapsule(
                         awayIsFav ? odd.underPrice : odd.overPrice,
-                        subtitle: {
-                            let prefix = awayIsFav ? "U" : "O"
-                            if let t = odd.total { return "\(prefix) \(ouTotal) (\(formatPoints(t)))" }
-                            return "\(prefix) \(ouTotal)"
-                        }(),
+                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)",
                         betHash: awayIsFav ? odd.underBetHash : odd.overBetHash,
-                        won: awayIsFav ? odd.underWon : odd.overWon
+                        won: awayOUWon,
+                        displayOverride: awayOUWon == false ? odd.total.map(formatPoints) : nil
                     )
                 }
 
                 HStack(spacing: 4) {
-                    HStack(spacing: 0) {
-                        Text("@ " + odd.homeAbbr)
-                        if let s = scores {
-                            Text(" \(s.home)")
-                                .foregroundStyle(.secondary)
-                        }
+                    Text("@ " + odd.homeAbbr)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let s = scores {
+                        Text("\(s.home)")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: scoreW, alignment: .trailing)
+                    } else {
+                        Spacer().frame(width: scoreW)
                     }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice), betHash: odd.mlHomeBetHash, won: odd.mlHomeWon)
-                    priceCapsule(odd.sprHomePrice, subtitle: {
-                        let line = odd.sprHomePoints.map(formatPoints) ?? ""
-                        if let m = odd.margin { return "\(line) (\(formatPoints(m)))" }
-                        return line
-                    }(), betHash: odd.sprHomeBetHash, won: odd.sprHomeWon)
+                    priceCapsule(odd.sprHomePrice,
+                                 subtitle: odd.sprHomePoints.map(formatPoints) ?? "",
+                                 betHash: odd.sprHomeBetHash, won: odd.sprHomeWon,
+                                 displayOverride: odd.sprHomeWon == false ? odd.margin.map(formatPoints) : nil)
                     priceCapsule(
                         awayIsFav ? odd.overPrice : odd.underPrice,
-                        subtitle: {
-                            let prefix = awayIsFav ? "O" : "U"
-                            if let t = odd.total { return "\(prefix) \(ouTotal) (\(formatPoints(t)))" }
-                            return "\(prefix) \(ouTotal)"
-                        }(),
+                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)",
                         betHash: awayIsFav ? odd.overBetHash : odd.underBetHash,
-                        won: awayIsFav ? odd.overWon : odd.underWon
+                        won: homeOUWon,
+                        displayOverride: homeOUWon == false ? odd.total.map(formatPoints) : nil
                     )
                 }
             }
