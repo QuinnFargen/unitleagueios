@@ -24,16 +24,14 @@ struct BetGameBanner: View {
     @Environment(\.colorScheme) private var colorScheme
     let bet: SelectedBet
 
-    private let timeInputFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm:ss"
-        f.locale = Locale(identifier: "en_US_POSIX")
+    private let timeInputFmt: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withColonSeparatorInTimeZone]
         return f
     }()
     private let timeOutputFmt: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "h:mm a"
-        f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
     private let dateInputFmt: DateFormatter = {
@@ -248,17 +246,15 @@ private struct GameOddsCard: View {
 
     private let colW: CGFloat = 58
 
-    private let timeInputFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm:ss"
-        f.locale = Locale(identifier: "en_US_POSIX")
+    private let timeInputFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withColonSeparatorInTimeZone]
         return f
     }()
 
     private let timeOutputFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "h:mm a"
-        f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
 

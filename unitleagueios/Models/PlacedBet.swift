@@ -10,7 +10,7 @@ struct PlacedBet: Codable, Identifiable {
     let units: Double
     let awayAbbr: String
     let homeAbbr: String
-    let gameTime: String?   // raw "HH:mm:ss" from API
+    let gameTime: String?   // ISO8601 UTC timestamp from API
     let gameDate: String?   // raw "yyyy-MM-dd" from API
     let bettorId: Int
     let syndicateId: Int
