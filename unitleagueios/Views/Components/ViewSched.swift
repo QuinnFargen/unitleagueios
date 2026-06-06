@@ -226,3 +226,21 @@ private struct SchedCard: View {
     }
     .environmentObject(AppTheme())
 }
+
+#Preview("SchedCard – Win (highlighted)") {
+    SchedCard(entry: Mock.schedItems[0], isHighlighted: true)
+        .padding()
+        .environmentObject(AppTheme())
+}
+
+#Preview("SchedCard – Upcoming") {
+    SchedCard(entry: Mock.schedItems[1], isHighlighted: false)
+        .padding()
+        .environmentObject(AppTheme())
+}
+
+#Preview("SchedCard – Loss") {
+    SchedCard(entry: Mock.schedItems[2], isHighlighted: false)
+        .padding()
+        .environmentObject(AppTheme())
+}
