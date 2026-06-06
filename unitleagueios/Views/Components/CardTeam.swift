@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ViewTeamBanner: View {
+struct CardTeam: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let team: Team
@@ -79,8 +79,8 @@ struct TeamMetaRow: View {
 
 #Preview("ViewTeamBanner") {
     VStack(spacing: 16) {
-        ViewTeamBanner(team: Mock.teamLAL, league: Mock.leagueNBA)
-        ViewTeamBanner(team: Mock.teamBOS, league: Mock.leagueNBA, showChevron: true)
+        CardTeam(team: Mock.teamLAL, league: Mock.leagueNBA)
+        CardTeam(team: Mock.teamBOS, league: Mock.leagueNBA, showChevron: true)
     }
     .padding()
     .environmentObject(AppTheme())

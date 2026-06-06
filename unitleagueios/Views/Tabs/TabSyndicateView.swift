@@ -71,10 +71,10 @@ struct TabSyndicateView: View {
             .tabToolbar()
             .task { await load() }
             .sheet(isPresented: $showingJoin, onDismiss: { Task { await load() } }) {
-                SheetJoinSyndicate(bettorId: bettorId)
+                SheetSyndicateJoin(bettorId: bettorId)
             }
             .sheet(isPresented: $showingCreate, onDismiss: { Task { await load() } }) {
-                SheetCreateSyndicate(bettorId: bettorId)
+                SheetSyndicateCreate(bettorId: bettorId)
             }
         }
     }

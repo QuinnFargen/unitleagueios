@@ -9,7 +9,7 @@
 
 import SwiftUI
 
-struct SheetJoinSyndicate: View {
+struct SheetSyndicateJoin: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
@@ -90,7 +90,7 @@ struct SheetJoinSyndicate: View {
 
 #Preview("SheetJoinSyndicate") {
     Color.clear.sheet(isPresented: .constant(true)) {
-        SheetJoinSyndicate(bettorId: 42)
+        SheetSyndicateJoin(bettorId: 42)
             .environmentObject(AppTheme())
     }
 }

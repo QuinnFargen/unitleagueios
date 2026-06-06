@@ -116,7 +116,7 @@ struct ViewTeamList: View {
                                 NavigationLink {
                                     ViewSched(team: team, league: league)
                                 } label: {
-                                    ViewTeamBanner(team: team, league: league, showChevron: true)
+                                    CardTeam(team: team, league: league, showChevron: true)
                                 }
                                 .buttonStyle(.plain)
                             }

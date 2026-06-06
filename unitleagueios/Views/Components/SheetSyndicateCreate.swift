@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct SheetCreateSyndicate: View {
+struct SheetSyndicateCreate: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
@@ -237,7 +237,7 @@ struct SheetCreateSyndicate: View {
 
 #Preview("SheetCreateSyndicate") {
     Color.clear.sheet(isPresented: .constant(true)) {
-        SheetCreateSyndicate(bettorId: 42)
+        SheetSyndicateCreate(bettorId: 42)
             .environmentObject(AppTheme())
     }
 }

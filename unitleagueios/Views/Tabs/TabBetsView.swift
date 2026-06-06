@@ -224,7 +224,7 @@ struct TabBetsView: View {
                                                             leagueId: odd.leagueId
                                                         )
                                                     } label: { Color.clear }
-                                                    GameOddsCard(odd: odd) { bet in selectedBet = bet }
+                                                    CardGameOdds(odd: odd) { bet in selectedBet = bet }
                                                 }
                                             } else {
                                                 NavigationLink {

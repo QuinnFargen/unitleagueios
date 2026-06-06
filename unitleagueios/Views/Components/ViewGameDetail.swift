@@ -181,7 +181,7 @@ struct ViewGameDetail: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 4)
-                            GameOddsCard(odd: odd) { bet in selectedBet = bet }
+                            CardGameOdds(odd: odd) { bet in selectedBet = bet }
                         }
                         .padding(.horizontal)
                     }
@@ -191,7 +191,7 @@ struct ViewGameDetail: View {
                             NavigationLink {
                                 ViewSched(team: awayTeam, league: league)
                             } label: {
-                                ViewTeamBanner(team: awayTeam, league: league, showChevron: true)
+                                CardTeam(team: awayTeam, league: league, showChevron: true)
                             }
                             .buttonStyle(.plain)
                         }
@@ -200,7 +200,7 @@ struct ViewGameDetail: View {
                             NavigationLink {
                                 ViewSched(team: homeTeam, league: league)
                             } label: {
-                                ViewTeamBanner(team: homeTeam, league: league, showChevron: true)
+                                CardTeam(team: homeTeam, league: league, showChevron: true)
                             }
                             .buttonStyle(.plain)
                         }
@@ -208,7 +208,7 @@ struct ViewGameDetail: View {
                     .padding(.horizontal)
 
                     if isUpcoming && !oddMany.isEmpty {
-                        AllOddsSection(odds: oddMany, awayAbbr: away, homeAbbr: home) { bet in
+                        CardManyOdds(odds: oddMany, awayAbbr: away, homeAbbr: home) { bet in
                             selectedBet = bet
                         }
                         .padding(.horizontal)

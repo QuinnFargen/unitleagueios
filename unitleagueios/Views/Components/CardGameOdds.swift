@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - GameOddsCard
 
-struct GameOddsCard: View {
+struct CardGameOdds: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let odd: Odds
@@ -232,7 +232,7 @@ struct GameOddsCard: View {
 }
 
 #Preview("GameOddsCard – upcoming") {
-    GameOddsCard(odd: Mock.odds) { _ in }
+    CardGameOdds(odd: Mock.odds) { _ in }
         .padding()
         .environmentObject(AppTheme())
 }
