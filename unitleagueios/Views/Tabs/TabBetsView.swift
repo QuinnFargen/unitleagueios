@@ -4,6 +4,8 @@ struct TabBetsView: View {
     @EnvironmentObject private var theme: AppTheme
     @EnvironmentObject private var betStore: BetStore
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("bettorId")            private var bettorId: Int            = 0
+    @AppStorage("selectedSyndicateId") private var selectedSyndicateId: Int  = 0
     @State private var selectedDate: Date = .now
     @State private var showingBookmarks = false
     @State private var selectedLeagueId: Int? = nil
@@ -16,6 +18,7 @@ struct TabBetsView: View {
     @State private var teams: [Team] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var selectedBet: SelectedBet?
 
     private let oddsService = OddsService()
     private let gameService = GameService()
@@ -209,19 +212,35 @@ struct TabBetsView: View {
                                 ScrollView {
                                     LazyVStack(spacing: 12) {
                                         ForEach(filteredOdds) { odd in
-                                            NavigationLink {
-                                                ViewGameDetail(
-                                                    gameId: odd.gameId,
-                                                    home: odd.homeAbbr,
-                                                    away: odd.awayAbbr,
-                                                    homeTeamId: odd.homeTeamId,
-                                                    awayTeamId: odd.awayTeamId,
-                                                    leagueId: odd.leagueId
-                                                )
-                                            } label: {
-                                                OddBestCard(odd: odd, betType: selectedBetType)
+                                            if selectedBetType == "ALL" {
+                                                ZStack {
+                                                    NavigationLink {
+                                                        ViewGameDetail(
+                                                            gameId: odd.gameId,
+                                                            home: odd.homeAbbr,
+                                                            away: odd.awayAbbr,
+                                                            homeTeamId: odd.homeTeamId,
+                                                            awayTeamId: odd.awayTeamId,
+                                                            leagueId: odd.leagueId
+                                                        )
+                                                    } label: { Color.clear }
+                                                    GameOddsCard(odd: odd) { bet in selectedBet = bet }
+                                                }
+                                            } else {
+                                                NavigationLink {
+                                                    ViewGameDetail(
+                                                        gameId: odd.gameId,
+                                                        home: odd.homeAbbr,
+                                                        away: odd.awayAbbr,
+                                                        homeTeamId: odd.homeTeamId,
+                                                        awayTeamId: odd.awayTeamId,
+                                                        leagueId: odd.leagueId
+                                                    )
+                                                } label: {
+                                                    OddBestCard(odd: odd, betType: selectedBetType)
+                                                }
+                                                .buttonStyle(.plain)
                                             }
-                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal)
@@ -234,6 +253,9 @@ struct TabBetsView: View {
                 .animation(.easeInOut(duration: 0.2), value: teams.isEmpty)
                 .sheet(isPresented: $showingBookmarks) {
                     SheetBookmarks()
+                }
+                .sheet(item: $selectedBet) { bet in
+                    SheetConfirmBet(bet: bet, bettorId: bettorId, syndicateId: selectedSyndicateId)
                 }
                 .gesture(
                     DragGesture(minimumDistance: 40, coordinateSpace: .local)
@@ -370,7 +392,7 @@ private struct GameCard: View {
     }
 }
 
-// MARK: - OddBestCard
+// MARK: - OddBestCard (single bet type: ML / SPR / O/U)
 
 private struct OddBestCard: View {
     @EnvironmentObject private var theme: AppTheme
@@ -398,19 +420,6 @@ private struct OddBestCard: View {
         return timeOutputFormatter.string(from: date)
     }
 
-    private var awayIsFav: Bool { (odd.sprAwayPoints ?? 1) < 0 }
-
-    private var scores: (away: Int, home: Int)? {
-        guard let margin = odd.margin, let total = odd.total, let winner = odd.winner else { return nil }
-        let hi = (total + margin) / 2.0
-        let lo = (total - margin) / 2.0
-        if winner == odd.homeAbbr {
-            return (away: Int(lo.rounded()), home: Int(hi.rounded()))
-        } else {
-            return (away: Int(hi.rounded()), home: Int(lo.rounded()))
-        }
-    }
-
     private func formatPrice(_ price: Double) -> String {
         String(format: "%.2f", price)
     }
@@ -433,10 +442,10 @@ private struct OddBestCard: View {
     }
 
     @ViewBuilder
-    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, won: Bool? = nil, displayOverride: String? = nil) -> some View {
+    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, won: Bool? = nil) -> some View {
         if let p = price {
             VStack(spacing: 1) {
-                Text(displayOverride ?? formatPrice(p))
+                Text(formatPrice(p))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(theme.primaryText(colorScheme))
                 if !subtitle.isEmpty {
@@ -459,102 +468,10 @@ private struct OddBestCard: View {
     }
 
     var body: some View {
-        Group {
-            if betType == "ALL" {
-                allModeLayout
-            } else {
-                singleModeLayout
-            }
-        }
-        .padding()
-        .background(theme.cardBackground(colorScheme))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    @ViewBuilder
-    private var allModeLayout: some View {
-        let scoreW: CGFloat = 28
-        let ouTotal = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
-        let awayOUWon = awayIsFav ? odd.underWon : odd.overWon
-        let homeOUWon = awayIsFav ? odd.overWon : odd.underWon
-        HStack(alignment: .center, spacing: 10) {
-            Image(systemName: odd.sportIcon)
-                .font(.title)
-                .foregroundStyle(theme.primaryText(colorScheme))
-                .frame(width: 34)
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 4) {
-                    if let time = formattedTime {
-                        Text(time)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Spacer().frame(width: scoreW)
-                    ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
-                        Text(h)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: colW, alignment: .center)
-                    }
-                }
-
-                HStack(spacing: 4) {
-                    Text(odd.awayAbbr)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if let s = scores {
-                        Text("\(s.away)")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: scoreW, alignment: .trailing)
-                    } else {
-                        Spacer().frame(width: scoreW)
-                    }
-                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice), betHash: odd.mlAwayBetHash, won: odd.mlAwayWon)
-                    priceCapsule(odd.sprAwayPrice,
-                                 subtitle: odd.sprAwayPoints.map(formatPoints) ?? "",
-                                 betHash: odd.sprAwayBetHash, won: odd.sprAwayWon,
-                                 displayOverride: odd.sprAwayWon == false ? odd.margin.map(formatPoints) : nil)
-                    priceCapsule(
-                        awayIsFav ? odd.underPrice : odd.overPrice,
-                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)",
-                        betHash: awayIsFav ? odd.underBetHash : odd.overBetHash,
-                        won: awayOUWon,
-                        displayOverride: awayOUWon == false ? odd.total.map(formatPoints) : nil
-                    )
-                }
-
-                HStack(spacing: 4) {
-                    Text("@ " + odd.homeAbbr)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(theme.primaryText(colorScheme))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if let s = scores {
-                        Text("\(s.home)")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: scoreW, alignment: .trailing)
-                    } else {
-                        Spacer().frame(width: scoreW)
-                    }
-                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice), betHash: odd.mlHomeBetHash, won: odd.mlHomeWon)
-                    priceCapsule(odd.sprHomePrice,
-                                 subtitle: odd.sprHomePoints.map(formatPoints) ?? "",
-                                 betHash: odd.sprHomeBetHash, won: odd.sprHomeWon,
-                                 displayOverride: odd.sprHomeWon == false ? odd.margin.map(formatPoints) : nil)
-                    priceCapsule(
-                        awayIsFav ? odd.overPrice : odd.underPrice,
-                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)",
-                        betHash: awayIsFav ? odd.overBetHash : odd.underBetHash,
-                        won: homeOUWon,
-                        displayOverride: homeOUWon == false ? odd.total.map(formatPoints) : nil
-                    )
-                }
-            }
-        }
+        singleModeLayout
+            .padding()
+            .background(theme.cardBackground(colorScheme))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     private struct SingleData {
