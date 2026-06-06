@@ -205,20 +205,7 @@ struct SheetBookmarks: View {
     }
 }
 
-#Preview("SheetBookmarks – with bets") {
-    let store = BetStore()
-    store.bookmark(Mock.placedBetML)
-    store.bookmark(Mock.placedBetSPR)
-    store.bookmarkParlay(legs: Mock.parlayLegs)
-
-    return Color.clear.sheet(isPresented: .constant(true)) {
-        SheetBookmarks()
-            .environmentObject(AppTheme())
-            .environmentObject(store)
-    }
-}
-
-#Preview("SheetBookmarks – empty") {
+#Preview("SheetBookmarks") {
     Color.clear.sheet(isPresented: .constant(true)) {
         SheetBookmarks()
             .environmentObject(AppTheme())
