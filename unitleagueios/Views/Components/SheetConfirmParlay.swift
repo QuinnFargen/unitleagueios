@@ -342,3 +342,28 @@ struct SheetConfirmParlay: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+#Preview("SheetConfirmParlay – from bookmarks") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetConfirmParlay(
+            currentBet: nil,
+            bettorId: 42,
+            syndicateId: 1,
+            savedLegs: Mock.parlayLegs
+        )
+        .environmentObject(AppTheme())
+        .environmentObject(BetStore())
+    }
+}
+
+#Preview("SheetConfirmParlay – add to existing") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetConfirmParlay(
+            currentBet: Mock.selectedBetML,
+            bettorId: 42,
+            syndicateId: 1
+        )
+        .environmentObject(AppTheme())
+        .environmentObject(BetStore())
+    }
+}

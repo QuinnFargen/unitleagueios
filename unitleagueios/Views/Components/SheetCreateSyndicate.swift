@@ -234,3 +234,10 @@ struct SheetCreateSyndicate: View {
         }
     }
 }
+
+#Preview("SheetCreateSyndicate") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetCreateSyndicate(bettorId: 42)
+            .environmentObject(AppTheme())
+    }
+}

@@ -87,3 +87,10 @@ struct SheetJoinSyndicate: View {
         }
     }
 }
+
+#Preview("SheetJoinSyndicate") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetJoinSyndicate(bettorId: 42)
+            .environmentObject(AppTheme())
+    }
+}

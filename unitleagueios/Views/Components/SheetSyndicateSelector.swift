@@ -121,3 +121,16 @@ struct SheetSyndicateSelector: View {
         isLoading = false
     }
 }
+
+#Preview("SheetSyndicateSelector") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetSyndicateSelector(
+            bettorId: 0,
+            selectedSyndicateId: .constant(1),
+            leagueSymbol: .constant("chart.line.uptrend.xyaxis"),
+            leagueColorName: .constant("Green"),
+            leagueRank: .constant(2)
+        )
+        .environmentObject(AppTheme())
+    }
+}

@@ -209,3 +209,10 @@ struct SheetEditProfile: View {
         }
     }
 }
+
+#Preview("SheetEditProfile") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetEditProfile()
+            .environmentObject(AppTheme())
+    }
+}
