@@ -144,3 +144,10 @@ struct ViewTeamList: View {
         isLoading = false
     }
 }
+
+#Preview("ViewTeamList") {
+    NavigationStack {
+        ViewTeamList(league: Mock.leagueNBA)
+    }
+    .environmentObject(AppTheme())
+}

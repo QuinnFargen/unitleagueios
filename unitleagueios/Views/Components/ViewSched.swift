@@ -220,7 +220,9 @@ private struct SchedCard: View {
 
 
 
-#Preview {
-    MainTabView()
-        .environmentObject(AppTheme())
+#Preview("ViewSched") {
+    NavigationStack {
+        ViewSched(team: Mock.teamLAL, league: Mock.leagueNBA)
+    }
+    .environmentObject(AppTheme())
 }

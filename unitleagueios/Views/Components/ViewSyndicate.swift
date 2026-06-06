@@ -414,3 +414,10 @@ private struct RunnerRow: View {
         .background(isCurrentUser ? theme.cardBackgroundProminent(colorScheme) : Color.clear)
     }
 }
+
+#Preview("ViewSyndicate") {
+    NavigationStack {
+        ViewSyndicate(syndicate: Mock.syndicate)
+    }
+    .environmentObject(AppTheme())
+}

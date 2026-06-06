@@ -76,3 +76,12 @@ struct TeamMetaRow: View {
         .foregroundStyle(.secondary)
     }
 }
+
+#Preview("ViewTeamBanner") {
+    VStack(spacing: 16) {
+        ViewTeamBanner(team: Mock.teamLAL, league: Mock.leagueNBA)
+        ViewTeamBanner(team: Mock.teamBOS, league: Mock.leagueNBA, showChevron: true)
+    }
+    .padding()
+    .environmentObject(AppTheme())
+}

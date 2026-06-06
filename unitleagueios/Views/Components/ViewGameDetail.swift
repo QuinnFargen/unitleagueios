@@ -689,3 +689,18 @@ extension SelectedBet {
         )
     }
 }
+
+#Preview("ViewGameDetail") {
+    NavigationStack {
+        ViewGameDetail(
+            gameId: 101,
+            home: "LAL",
+            away: "BOS",
+            homeTeamId: 1,
+            awayTeamId: 2,
+            leagueId: 1
+        )
+    }
+    .environmentObject(AppTheme())
+    .environmentObject(BetStore())
+}

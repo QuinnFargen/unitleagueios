@@ -288,3 +288,27 @@ struct SheetConfirmBet: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+#Preview("SheetConfirmBet – ML") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetConfirmBet(
+            bet: Mock.selectedBetML,
+            bettorId: 42,
+            syndicateId: 1
+        )
+        .environmentObject(AppTheme())
+        .environmentObject(BetStore())
+    }
+}
+
+#Preview("SheetConfirmBet – SPR") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SheetConfirmBet(
+            bet: Mock.selectedBetSPR,
+            bettorId: 42,
+            syndicateId: 1
+        )
+        .environmentObject(AppTheme())
+        .environmentObject(BetStore())
+    }
+}
