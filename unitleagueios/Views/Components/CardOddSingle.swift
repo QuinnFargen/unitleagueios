@@ -179,3 +179,13 @@ struct CardOddSingle: View {
         }
     }
 }
+
+#Preview("CardOddSingle") {
+    VStack(spacing: 12) {
+        CardOddSingle(odd: Mock.odds, betType: "ML")
+        CardOddSingle(odd: Mock.odds, betType: "SPR")
+        CardOddSingle(odd: Mock.odds, betType: "O/U")
+    }
+    .padding()
+    .environmentObject(AppTheme())
+}

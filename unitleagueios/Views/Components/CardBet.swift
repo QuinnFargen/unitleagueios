@@ -1,14 +1,6 @@
-//
-//  BetGameBanner.swift
-//  unitleagueios
-//
-//  Created by Quinn Fargen on 6/6/26.
-//
-
-
 import SwiftUI
 
-struct BetGameBanner: View {
+struct CardBet: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let bet: SelectedBet
@@ -114,4 +106,14 @@ struct BetGameBanner: View {
         .background(theme.cardBackground(colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
+}
+
+#Preview("CardBet") {
+    VStack(spacing: 12) {
+        CardBet(bet: Mock.selectedBetML)
+        CardBet(bet: Mock.selectedBetSPR)
+        CardBet(bet: Mock.selectedBetOU)
+    }
+    .padding()
+    .environmentObject(AppTheme())
 }

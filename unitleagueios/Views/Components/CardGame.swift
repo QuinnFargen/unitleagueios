@@ -70,3 +70,12 @@ struct CardGame: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
+
+#Preview("CardGame") {
+    VStack(spacing: 12) {
+        CardGame(game: Mock.gameLive)
+        CardGame(game: Mock.gameUpcoming)
+    }
+    .padding()
+    .environmentObject(AppTheme())
+}

@@ -76,7 +76,7 @@ struct SheetConfirmParlay: View {
                                     else          { selectedIds.insert(leg.id) }
                                 } label: {
                                     HStack(spacing: 12) {
-                                        BetGameBanner(bet: SelectedBet(placedBet: leg))
+                                        CardBet(bet: SelectedBet(placedBet: leg))
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 14)
                                                     .strokeBorder(
