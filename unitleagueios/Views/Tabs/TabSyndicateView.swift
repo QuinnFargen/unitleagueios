@@ -117,10 +117,6 @@ private struct LeagueActionButton: View {
     }
 }
 
-// MARK: - Create Sheet
-
-
-
 enum SyndicateOption {
     static let symbols = [
         "person.3.fill",

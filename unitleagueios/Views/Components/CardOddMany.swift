@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - AllOddsSection
 
-struct CardManyOdds: View {
+struct CardOddMany: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
 
@@ -198,7 +198,7 @@ struct CardManyOdds: View {
 }
 
 #Preview("AllOddsSection – collapsed") {
-    CardManyOdds(
+    CardOddMany(
         odds: Mock.oddMany,
         awayAbbr: "BOS",
         homeAbbr: "LAL"
