@@ -127,10 +127,6 @@ struct BetGameBanner: View {
     }
 }
 
-private func txnWagerLabel(_ units: Double) -> String {
-    units == 0.5 ? "½" : String(format: "%.4g", units)
-}
-
 // MARK: - ViewGameDetail
 
 struct ViewGameDetail: View {
