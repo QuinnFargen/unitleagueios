@@ -86,9 +86,128 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 **Used in:**
 - `TabSyndicateView` (NavigationLink destination from syndicate list)
 
-**Sub-components:** `RunnerRow` (private), `EditSyndicateSheet` (private sheet)
+**Sub-components:** `RunnerRow` (private), `SheetSyndicateEdit`
 
 **Environment:** `AppTheme`, `@AppStorage("bettorId")`, `@AppStorage("selectedSyndicateId")`, `@AppStorage("leagueSymbol")`, `@AppStorage("leagueColorName")`, `@AppStorage("leagueRank")`
+
+---
+
+## SheetSyndicateEdit
+
+**Purpose:** Syndicate edit sheet — rename, pick symbol and color; shows join code for admins.
+
+**Models:** `Syndicate`, `AccentOption`, `SyndicateOption`
+
+**Data source:** `SyndicateService.updateSyndicate(...)` on submit. `Syndicate` passed in as `@Binding`.
+
+**Used in:**
+- `ViewSyndicate` (admin edit sheet)
+
+**Sub-components:** None
+
+**Environment:** `AppTheme`
+
+---
+
+## CardGame
+
+**Purpose:** Single game row card — sport icon, away @ home matchup, score (FINAL) or scheduled time.
+
+**Models:** `Game`
+
+**Data source:** Passed in by parent — no network calls.
+
+**Used in:**
+- `TabBetsView` (game list when bet type is "None")
+
+**Sub-components:** None
+
+**Environment:** `AppTheme`
+
+---
+
+## CardOddSingle
+
+**Purpose:** Odds card for a single bet type (ML / SPR / O/U) — price capsules, implied probability, game time.
+
+**Models:** `Odds`
+
+**Data source:** Passed in by parent — no network calls.
+
+**Used in:**
+- `TabBetsView` (SPR / ML / O/U filtered odds list)
+
+**Sub-components:** None
+
+**Environment:** `AppTheme`
+
+---
+
+## CardPlacedBet
+
+**Purpose:** Single placed-bet row with win/loss indicator and optional cancel confirmation.
+
+**Models:** `Txn`, `SelectedBet`
+
+**Data source:** Passed in by parent — no network calls.
+
+**Used in:**
+- `TabJuiceView` (active and history bet lists)
+
+**Sub-components:** `BetGameBanner`
+
+**Environment:** `AppTheme`
+
+---
+
+## CardPlacedParlay
+
+**Purpose:** Parlay card grouping all legs — combined odds, wager label, win/loss indicator, optional cancel confirmation.
+
+**Models:** `Txn`, `SelectedBet`
+
+**Data source:** Passed in by parent — no network calls.
+
+**Used in:**
+- `TabJuiceView` (active and history parlay groups)
+
+**Sub-components:** `BetGameBanner`
+
+**Environment:** `AppTheme`
+
+---
+
+## CardLeague
+
+**Purpose:** Expandable league card — collapsed shows sport icon + name; expanded reveals Teams, Ranks, Sched, Odds option cells.
+
+**Models:** `League`
+
+**Data source:** Passed in by parent — no network calls.
+
+**Used in:**
+- `TabResearchView` (one per league)
+
+**Sub-components:** `LeagueOptionCell` (private), `ViewTeamList` (NavigationLink destination)
+
+**Environment:** `AppTheme`
+
+---
+
+## CardSyndicate
+
+**Purpose:** Syndicate list row — icon, name, optional description or "Public" label, selected checkmark or chevron.
+
+**Models:** `Syndicate`
+
+**Data source:** Passed in by parent — no network calls.
+
+**Used in:**
+- `TabSyndicateView` (syndicate list)
+
+**Sub-components:** None
+
+**Environment:** `AppTheme`
 
 ---
 
