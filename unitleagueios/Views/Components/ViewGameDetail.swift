@@ -176,8 +176,14 @@ struct ViewGameDetail: View {
             ScrollView {
                 VStack(spacing: 16) {
                     if let odd {
-                        GameOddsCard(odd: odd) { bet in selectedBet = bet }
-                            .padding(.horizontal)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Best Odds")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 4)
+                            GameOddsCard(odd: odd) { bet in selectedBet = bet }
+                        }
+                        .padding(.horizontal)
                     }
 
                     VStack(spacing: 12) {
@@ -238,13 +244,14 @@ struct ViewGameDetail: View {
 
 // MARK: - GameOddsCard
 
-private struct GameOddsCard: View {
+struct GameOddsCard: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
     let odd: Odds
     let onBetSelected: (SelectedBet) -> Void
 
     private let colW: CGFloat = 58
+    private let scoreW: CGFloat = 36
 
     private let timeInputFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
@@ -258,32 +265,24 @@ private struct GameOddsCard: View {
         return f
     }()
 
-    private let dateInputFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private let dateOutputFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
     private var formattedTime: String? {
         guard let raw = odd.gameTime,
               let date = timeInputFormatter.date(from: raw) else { return nil }
         return timeOutputFormatter.string(from: date)
     }
 
-    private var formattedDate: String? {
-        guard let d = dateInputFormatter.date(from: odd.gameDt) else { return nil }
-        return dateOutputFormatter.string(from: d)
-    }
-
     private var awayIsFav: Bool { (odd.sprAwayPoints ?? 1) < 0 }
+
+    private var scores: (away: Int, home: Int)? {
+        guard let margin = odd.margin, let total = odd.total, let winner = odd.winner else { return nil }
+        let hi = (total + margin) / 2.0
+        let lo = (total - margin) / 2.0
+        if winner == odd.homeAbbr {
+            return (away: Int(lo.rounded()), home: Int(hi.rounded()))
+        } else {
+            return (away: Int(hi.rounded()), home: Int(lo.rounded()))
+        }
+    }
 
     private func formatPrice(_ price: Double) -> String {
         String(format: "%.2f", price)
@@ -307,15 +306,27 @@ private struct GameOddsCard: View {
     }
 
     @ViewBuilder
-    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, won: Bool? = nil, onTap: (() -> Void)? = nil) -> some View {
+    private func scoreCapsule(_ value: Int) -> some View {
+        Text("\(value)")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(theme.primaryText(colorScheme))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(width: scoreW)
+            .background(theme.chipUnselected(colorScheme))
+            .clipShape(Capsule())
+    }
+
+    @ViewBuilder
+    private func priceCapsule(_ price: Double?, subtitle: String = "", betHash: String? = nil, won: Bool? = nil, displayOverride: String? = nil, onTap: (() -> Void)? = nil) -> some View {
         if let p = price {
-            if betHash != nil {
-                Button(action: { onTap?() }) {
-                    priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash, won: won)
+            if betHash != nil, let onTap {
+                Button(action: onTap) {
+                    priceCapsuleLabel(p, display: displayOverride ?? formatPrice(p), subtitle: subtitle, betHash: betHash, won: won)
                 }
                 .buttonStyle(.plain)
             } else {
-                priceCapsuleLabel(p, subtitle: subtitle, betHash: betHash, won: won)
+                priceCapsuleLabel(p, display: displayOverride ?? formatPrice(p), subtitle: subtitle, betHash: betHash, won: won)
             }
         } else {
             Text("—")
@@ -326,9 +337,9 @@ private struct GameOddsCard: View {
     }
 
     @ViewBuilder
-    private func priceCapsuleLabel(_ price: Double, subtitle: String, betHash: String?, won: Bool?) -> some View {
+    private func priceCapsuleLabel(_ price: Double, display: String, subtitle: String, betHash: String?, won: Bool?) -> some View {
         VStack(spacing: 1) {
-            Text(formatPrice(price))
+            Text(display)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(theme.primaryText(colorScheme))
             if !subtitle.isEmpty {
@@ -346,18 +357,27 @@ private struct GameOddsCard: View {
 
     var body: some View {
         let ouTotal = (odd.overPoints ?? odd.underPoints).map(formatPoints) ?? ""
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Best Odds")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
+        let awayOUWon = awayIsFav ? odd.underWon : odd.overWon
+        let homeOUWon = awayIsFav ? odd.overWon : odd.underWon
+        let sprAwayLost = odd.sprAwayWon == false
+        let sprHomeLost = odd.sprHomeWon == false
 
-            VStack(spacing: 0) {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: odd.sportIcon)
+                .font(.title)
+                .foregroundStyle(theme.primaryText(colorScheme))
+                .frame(width: 34)
+
+            VStack(alignment: .leading, spacing: 6) {
+                // Header row: time | spacer | score placeholder | ML | SPR | O/U
                 HStack(spacing: 4) {
-                    Text([formattedDate, formattedTime].compactMap { $0 }.joined(separator: " · "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let time = formattedTime {
+                        Text(time)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
+                    Spacer().frame(width: scoreW)
                     ForEach(["ML", "SPR", "O/U"], id: \.self) { h in
                         Text(h)
                             .font(.caption.weight(.semibold))
@@ -365,28 +385,25 @@ private struct GameOddsCard: View {
                             .frame(width: colW, alignment: .center)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-
-                Divider()
 
                 // Away row
                 HStack(spacing: 4) {
-                    HStack(spacing: 0) {
-                        Text("@ ").opacity(0)
-                        Text(odd.awayAbbr)
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.primaryText(colorScheme))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice), betHash: odd.mlAwayBetHash, won: odd.mlAwayWon) {
+                    Text(odd.awayAbbr)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.primaryText(colorScheme))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let s = scores { scoreCapsule(s.away) } else { Spacer().frame(width: scoreW) }
+                    priceCapsule(odd.mlAwayPrice, subtitle: impliedPct(odd.mlAwayPrice),
+                                 betHash: odd.mlAwayBetHash, won: odd.mlAwayWon) {
                         guard let p = odd.mlAwayPrice, let h = odd.mlAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Away", price: p, points: nil,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
                                                   gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
-                    priceCapsule(odd.sprAwayPrice, subtitle: odd.sprAwayPoints.map(formatPoints) ?? "", betHash: odd.sprAwayBetHash, won: odd.sprAwayWon) {
+                    priceCapsule(odd.sprAwayPrice,
+                                 subtitle: sprAwayLost ? "" : (odd.sprAwayPoints.map(formatPoints) ?? ""),
+                                 betHash: odd.sprAwayBetHash, won: odd.sprAwayWon,
+                                 displayOverride: sprAwayLost ? odd.margin.map(formatPoints) : nil) {
                         guard let p = odd.sprAwayPrice, let h = odd.sprAwayBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Away", price: p, points: odd.sprAwayPoints,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
@@ -394,9 +411,10 @@ private struct GameOddsCard: View {
                     }
                     priceCapsule(
                         awayIsFav ? odd.underPrice : odd.overPrice,
-                        subtitle: awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)",
+                        subtitle: awayOUWon == false ? "" : (awayIsFav ? "U \(ouTotal)" : "O \(ouTotal)"),
                         betHash: awayIsFav ? odd.underBetHash : odd.overBetHash,
-                        won: awayIsFav ? odd.underWon : odd.overWon
+                        won: awayOUWon,
+                        displayOverride: awayOUWon == false ? odd.total.map(formatPoints) : nil
                     ) {
                         let price = awayIsFav ? odd.underPrice : odd.overPrice
                         let hash  = awayIsFav ? odd.underBetHash : odd.overBetHash
@@ -407,10 +425,6 @@ private struct GameOddsCard: View {
                                                   homeAbbr: odd.homeAbbr, gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-
-                Divider()
 
                 // Home row
                 HStack(spacing: 4) {
@@ -418,14 +432,18 @@ private struct GameOddsCard: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(theme.primaryText(colorScheme))
                         .frame(maxWidth: .infinity, alignment: .leading)
-
-                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice), betHash: odd.mlHomeBetHash, won: odd.mlHomeWon) {
+                    if let s = scores { scoreCapsule(s.home) } else { Spacer().frame(width: scoreW) }
+                    priceCapsule(odd.mlHomePrice, subtitle: impliedPct(odd.mlHomePrice),
+                                 betHash: odd.mlHomeBetHash, won: odd.mlHomeWon) {
                         guard let p = odd.mlHomePrice, let h = odd.mlHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "ML", side: "Home", price: p, points: nil,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
                                                   gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
-                    priceCapsule(odd.sprHomePrice, subtitle: odd.sprHomePoints.map(formatPoints) ?? "", betHash: odd.sprHomeBetHash, won: odd.sprHomeWon) {
+                    priceCapsule(odd.sprHomePrice,
+                                 subtitle: sprHomeLost ? "" : (odd.sprHomePoints.map(formatPoints) ?? ""),
+                                 betHash: odd.sprHomeBetHash, won: odd.sprHomeWon,
+                                 displayOverride: sprHomeLost ? odd.margin.map(formatPoints) : nil) {
                         guard let p = odd.sprHomePrice, let h = odd.sprHomeBetHash else { return }
                         onBetSelected(SelectedBet(betHash: h, type: "SPR", side: "Home", price: p, points: odd.sprHomePoints,
                                                   awayAbbr: odd.awayAbbr, homeAbbr: odd.homeAbbr,
@@ -433,9 +451,10 @@ private struct GameOddsCard: View {
                     }
                     priceCapsule(
                         awayIsFav ? odd.overPrice : odd.underPrice,
-                        subtitle: awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)",
+                        subtitle: homeOUWon == false ? "" : (awayIsFav ? "O \(ouTotal)" : "U \(ouTotal)"),
                         betHash: awayIsFav ? odd.overBetHash : odd.underBetHash,
-                        won: awayIsFav ? odd.overWon : odd.underWon
+                        won: homeOUWon,
+                        displayOverride: homeOUWon == false ? odd.total.map(formatPoints) : nil
                     ) {
                         let price = awayIsFav ? odd.overPrice : odd.underPrice
                         let hash  = awayIsFav ? odd.overBetHash : odd.underBetHash
@@ -446,12 +465,11 @@ private struct GameOddsCard: View {
                                                   homeAbbr: odd.homeAbbr, gameTime: odd.gameTime, gameDate: odd.gameDt))
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
             }
-            .background(theme.cardBackground(colorScheme))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
+        .padding()
+        .background(theme.cardBackground(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
