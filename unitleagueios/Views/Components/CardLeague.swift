@@ -95,3 +95,12 @@ private struct LeagueOptionCell: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
+
+#Preview("CardLeague") {
+    VStack(spacing: 12) {
+        CardLeague(league: Mock.leagueNBA, isExpanded: false) {}
+        CardLeague(league: Mock.leagueNFL, isExpanded: true) {}
+    }
+    .padding()
+    .environmentObject(AppTheme())
+}

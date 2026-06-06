@@ -69,7 +69,7 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 **Used in:**
 - `TabBetsView` (primary odds browsing destination)
 
-**Sub-components:** `BetGameBanner`, `GameOddsCard`, `AllOddsSection` (private), `ViewTeamBanner`, `ViewSched` (NavigationLink), `SheetConfirmBet`
+**Sub-components:** `CardBet`, `GameOddsCard`, `AllOddsSection` (private), `ViewTeamBanner`, `ViewSched` (NavigationLink), `SheetConfirmBet`
 
 **Environment:** `AppTheme`, `BetStore`, `@AppStorage("bettorId")`, `@AppStorage("selectedSyndicateId")`
 
@@ -143,6 +143,26 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 
 ---
 
+## CardBet
+
+**Purpose:** Bet detail banner — matchup, date/time, bet label (team + spread/total), price multiplier, optional unit count.
+
+**Models:** `SelectedBet` (`Models/SelectedBet.swift`)
+
+**Data source:** Passed in by parent — no network calls.
+
+**Used in:**
+- `CardPlacedBet` (inner bet row)
+- `CardPlacedParlay` (each parlay leg)
+- `SheetConfirmBet` (top bet summary)
+- `SheetConfirmParlay` (each selectable leg)
+
+**Sub-components:** None
+
+**Environment:** `AppTheme`
+
+---
+
 ## CardPlacedBet
 
 **Purpose:** Single placed-bet row with win/loss indicator and optional cancel confirmation.
@@ -154,7 +174,7 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 **Used in:**
 - `TabJuiceView` (active and history bet lists)
 
-**Sub-components:** `BetGameBanner`
+**Sub-components:** `CardBet`
 
 **Environment:** `AppTheme`
 
@@ -171,7 +191,7 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 **Used in:**
 - `TabJuiceView` (active and history parlay groups)
 
-**Sub-components:** `BetGameBanner`
+**Sub-components:** `CardBet`
 
 **Environment:** `AppTheme`
 
@@ -224,7 +244,7 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 - `SheetBookmarks` (sheet on bookmarked bet tap)
 - `TabBetsView`
 
-**Sub-components:** `BetGameBanner`, `SheetSyndicateSelector`, `SheetConfirmParlay`
+**Sub-components:** `CardBet`, `SheetSyndicateSelector`, `SheetConfirmParlay`
 
 **Environment:** `AppTheme`, `BetStore`, `@AppStorage("unitBalance")`
 
@@ -242,7 +262,7 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 - `SheetConfirmBet` (Add to Parlay action)
 - `SheetBookmarks` (Parlay toolbar button and bookmarked parlay tap)
 
-**Sub-components:** `BetGameBanner`, `SheetSyndicateSelector`
+**Sub-components:** `CardBet`, `SheetSyndicateSelector`
 
 **Environment:** `AppTheme`, `BetStore`, `@AppStorage("unitBalance")`
 
@@ -345,8 +365,9 @@ Reusable views used across the app's tab structure. Each file ends with a `#Prev
 | `AppTheme` | Colors, fonts, backgrounds — required by every component |
 | `BetStore` | Local bookmark storage — required by bet sheet components |
 | `FilterChip` | Pill-shaped toggle chip — used in `ViewSched`, `ViewTeamList` |
-| `BetGameBanner` | Bet detail header row — used in `SheetConfirmBet`, `SheetConfirmParlay`, `ViewGameDetail` |
+| `CardBet` | Bet detail banner — used in `SheetConfirmBet`, `SheetConfirmParlay`, `CardPlacedBet`, `CardPlacedParlay` |
 | `GameOddsCard` | Best-odds table for a game — used in `ViewGameDetail` |
+| `SelectedBet` | View-facing bet model (`Models/SelectedBet.swift`) — bridges `Odds`/`Txn` → bet confirmation sheets |
 | `ProfileOption` | Color/symbol helpers for bettor profiles — used in `ViewSyndicate`, `SheetSyndicateSelector` |
 | `AccentOption` | Named accent color enum — used in syndicate and profile sheets |
 
@@ -379,6 +400,14 @@ All preview mock data lives in `PreviewMocks.swift` inside a `#if DEBUG` block. 
 | `Mock.odds` | `Odds` | BOS @ LAL gameId 101 — full ML/SPR/O/U odds set |
 | `Mock.oddMany` | `[OddMany]` | 3 individual book odds for the same game |
 | `Mock.schedItems` | `[Sched]` | 3 LAL schedule entries (1 win, 1 upcoming, 1 loss) |
+| `Mock.gameLive` | `Game` | BOS @ LAL — completed, BOS won 112–104 |
+| `Mock.gameUpcoming` | `Game` | BOS @ LAL — upcoming, 6/10 7:30 PM |
+| `Mock.games` | `[Game]` | Live and upcoming game |
+| `Mock.txnML` | `Txn` | ML bet pending, 2 units, BOS @ LAL |
+| `Mock.txnSPR` | `Txn` | SPR bet pending, 1 unit, BOS +5.5 @ LAL |
+| `Mock.txnWon` | `Txn` | ML bet won, 2 units |
+| `Mock.txnLost` | `Txn` | SPR bet lost, 1.5 units |
+| `Mock.txnParlay` | `[Txn]` | 2-leg parlay — ML + SPR, parlay_id 99 |
 
 To extend mock data, add new `static let` or `static var` properties to `enum Mock` inside `PreviewMocks.swift`. Use `#if DEBUG` extensions for any model that lacks a memberwise init (currently `Syndicate`).
 

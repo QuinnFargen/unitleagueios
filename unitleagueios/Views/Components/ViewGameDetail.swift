@@ -1,22 +1,5 @@
 import SwiftUI
 
-// MARK: - SelectedBet
-
-struct SelectedBet: Identifiable {
-    let id = UUID()
-    let betHash: String
-    let type: String        // "ML", "SPR", "O/U", or "" when unknown
-    let side: String        // kept for PlacedBet compat; "" when unused
-    let price: Double
-    let points: Double?     // spread value or O/U total; nil for ML
-    let awayAbbr: String
-    let homeAbbr: String
-    let gameTime: String?
-    let gameDate: String?
-    var team: String? = nil  // team abbr from Txn (e.g. "BAL"); preferred over side-logic
-    var unit: Double? = nil  // when set, BetGameBanner shows unit count after price
-}
-
 struct ViewGameDetail: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.colorScheme) private var colorScheme
@@ -42,6 +25,38 @@ struct ViewGameDetail: View {
     private let teamService = TeamService()
     private let leagueService = LeagueService()
     private let oddManyService = OddManyService()
+
+    // Standard init — data loaded via .task { fetchData() }
+    init(gameId: Int, home: String, away: String,
+         homeTeamId: Int, awayTeamId: Int, leagueId: Int) {
+        self.gameId = gameId
+        self.home = home
+        self.away = away
+        self.homeTeamId = homeTeamId
+        self.awayTeamId = awayTeamId
+        self.leagueId = leagueId
+    }
+
+    // Preview/testing init — injects mock data, skips network fetch
+    init(gameId: Int, home: String, away: String,
+         homeTeamId: Int, awayTeamId: Int, leagueId: Int,
+         preloadedOdd: Odds?,
+         preloadedHomeTeam: Team?,
+         preloadedAwayTeam: Team?,
+         preloadedLeague: League?,
+         preloadedOddMany: [OddMany]) {
+        self.gameId = gameId
+        self.home = home
+        self.away = away
+        self.homeTeamId = homeTeamId
+        self.awayTeamId = awayTeamId
+        self.leagueId = leagueId
+        self._odd = State(initialValue: preloadedOdd)
+        self._homeTeam = State(initialValue: preloadedHomeTeam)
+        self._awayTeam = State(initialValue: preloadedAwayTeam)
+        self._league = State(initialValue: preloadedLeague)
+        self._oddMany = State(initialValue: preloadedOddMany)
+    }
 
     private var isUpcoming: Bool {
         let gameDt = odd?.gameDt ?? oddMany.first?.gameDt
@@ -111,6 +126,8 @@ struct ViewGameDetail: View {
     }
 
     private func fetchData() async {
+        // Skip if data was preloaded (e.g. in previews)
+        guard odd == nil else { return }
         async let oddsTask = try? oddService.fetchOddBest(gameId: gameId)
         async let teamsTask = try? teamService.fetchTeams(leagueId: leagueId)
         async let leaguesTask = try? leagueService.fetchLeagues()
@@ -126,22 +143,6 @@ struct ViewGameDetail: View {
     }
 }
 
-extension SelectedBet {
-    init(placedBet: PlacedBet) {
-        self.init(
-            betHash:  placedBet.betHash,
-            type:     placedBet.type,
-            side:     placedBet.side,
-            price:    placedBet.price,
-            points:   placedBet.points,
-            awayAbbr: placedBet.awayAbbr,
-            homeAbbr: placedBet.homeAbbr,
-            gameTime: placedBet.gameTime,
-            gameDate: placedBet.gameDate
-        )
-    }
-}
-
 #Preview("ViewGameDetail") {
     NavigationStack {
         ViewGameDetail(
@@ -150,7 +151,12 @@ extension SelectedBet {
             away: "BOS",
             homeTeamId: 1,
             awayTeamId: 2,
-            leagueId: 1
+            leagueId: 1,
+            preloadedOdd: Mock.odds,
+            preloadedHomeTeam: Mock.teamLAL,
+            preloadedAwayTeam: Mock.teamBOS,
+            preloadedLeague: Mock.leagueNBA,
+            preloadedOddMany: Mock.oddMany
         )
     }
     .environmentObject(AppTheme())

@@ -51,7 +51,7 @@ struct SheetConfirmBet: View {
                 ScrollView {
                     VStack(spacing: 16) {
 
-                        BetGameBanner(bet: bet)
+                        CardBet(bet: bet)
 
                         // Syndicate + Runner identity
                         HStack(spacing: 0) {

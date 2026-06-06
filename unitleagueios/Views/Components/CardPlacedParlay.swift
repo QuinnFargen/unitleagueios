@@ -46,7 +46,7 @@ struct CardPlacedParlay: View {
                 Divider()
 
                 ForEach(legs) { leg in
-                    BetGameBanner(bet: selectedBet(from: leg))
+                    CardBet(bet: selectedBet(from: leg))
                 }
             }
             .padding(14)
@@ -62,4 +62,10 @@ struct CardPlacedParlay: View {
             Button("Cancel Parlay", role: .destructive) { onCancel?() }
         }
     }
+}
+
+#Preview("CardPlacedParlay") {
+    CardPlacedParlay(legs: Mock.txnParlay)
+        .padding()
+        .environmentObject(AppTheme())
 }

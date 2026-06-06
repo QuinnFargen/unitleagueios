@@ -235,6 +235,114 @@ enum Mock {
         return try! JSONDecoder().decode([OddMany].self, from: Data(json.utf8))
     }()
 
+    // MARK: Games
+
+    static let gameLive = Game(
+        id: 100, home: "LAL", away: "BOS",
+        gameDate: "2026-06-08", gameTime: nil,
+        homeScore: 104, awayScore: 112,
+        winner: "BOS", leagueId: 1,
+        homeTeamId: 1, awayTeamId: 2, wonTeamId: 2
+    )
+    static let gameUpcoming = Game(
+        id: 101, home: "LAL", away: "BOS",
+        gameDate: "2026-06-10", gameTime: "2026-06-10T23:30:00+00:00",
+        homeScore: nil, awayScore: nil,
+        winner: nil, leagueId: 1,
+        homeTeamId: 1, awayTeamId: 2, wonTeamId: nil
+    )
+    static var games: [Game] { [gameLive, gameUpcoming] }
+
+    // MARK: Txn (decoded from JSON — no memberwise init due to custom Decodable)
+
+    static let txnML: Txn = {
+        let json = """
+        {
+          "txn_id": 1, "bettor_id": 42, "syndicate_id": 1,
+          "txn_type": "bet", "bet_hash": "ml_bos_lal_001", "parlay_id": null,
+          "unit": 2.0, "price": 2.10, "won": null, "canceled": null,
+          "bet_type": "ML", "points": null, "team": "BOS",
+          "home": "LAL", "away": "BOS",
+          "game_ts": "2026-06-10T23:30:00+00:00", "game_dt": "2026-06-10",
+          "game_id": 101, "bookmaker": "FanDuel", "bet_concat": "BOS_ML"
+        }
+        """
+        return try! JSONDecoder().decode(Txn.self, from: Data(json.utf8))
+    }()
+
+    static let txnSPR: Txn = {
+        let json = """
+        {
+          "txn_id": 2, "bettor_id": 42, "syndicate_id": 1,
+          "txn_type": "bet", "bet_hash": "spr_bos_lal_001", "parlay_id": null,
+          "unit": 1.0, "price": 1.91, "won": null, "canceled": null,
+          "bet_type": "SPR", "points": 5.5, "team": "BOS",
+          "home": "LAL", "away": "BOS",
+          "game_ts": "2026-06-10T23:30:00+00:00", "game_dt": "2026-06-10",
+          "game_id": 101, "bookmaker": "FanDuel", "bet_concat": "BOS_SPR"
+        }
+        """
+        return try! JSONDecoder().decode(Txn.self, from: Data(json.utf8))
+    }()
+
+    static let txnWon: Txn = {
+        let json = """
+        {
+          "txn_id": 3, "bettor_id": 42, "syndicate_id": 1,
+          "txn_type": "bet", "bet_hash": "ml_bos_lal_001", "parlay_id": null,
+          "unit": 2.0, "price": 2.10, "won": true, "canceled": null,
+          "bet_type": "ML", "points": null, "team": "BOS",
+          "home": "LAL", "away": "BOS",
+          "game_ts": "2026-06-08T23:30:00+00:00", "game_dt": "2026-06-08",
+          "game_id": 100, "bookmaker": "FanDuel", "bet_concat": "BOS_ML"
+        }
+        """
+        return try! JSONDecoder().decode(Txn.self, from: Data(json.utf8))
+    }()
+
+    static let txnLost: Txn = {
+        let json = """
+        {
+          "txn_id": 4, "bettor_id": 42, "syndicate_id": 1,
+          "txn_type": "bet", "bet_hash": "spr_lal_bos_002", "parlay_id": null,
+          "unit": 1.5, "price": 1.91, "won": false, "canceled": null,
+          "bet_type": "SPR", "points": -5.5, "team": "LAL",
+          "home": "LAL", "away": "BOS",
+          "game_ts": "2026-06-08T23:30:00+00:00", "game_dt": "2026-06-08",
+          "game_id": 100, "bookmaker": "DraftKings", "bet_concat": "LAL_SPR"
+        }
+        """
+        return try! JSONDecoder().decode(Txn.self, from: Data(json.utf8))
+    }()
+
+    static var txnParlay: [Txn] {
+        let json = """
+        [
+          {
+            "txn_id": 5, "bettor_id": 42, "syndicate_id": 1,
+            "txn_type": "parlay", "bet_hash": "ml_bos_lal_001", "parlay_id": 99,
+            "unit": 1.0, "price": 2.10, "won": null, "canceled": null,
+            "bet_type": "ML", "points": null, "team": "BOS",
+            "home": "LAL", "away": "BOS",
+            "game_ts": "2026-06-10T23:30:00+00:00", "game_dt": "2026-06-10",
+            "game_id": 101, "bookmaker": "FanDuel", "bet_concat": "BOS_ML",
+            "parlay_price_mult": 4.0311
+          },
+          {
+            "txn_id": 6, "bettor_id": 42, "syndicate_id": 1,
+            "txn_type": "parlay", "bet_hash": "spr_den_kc_001", "parlay_id": 99,
+            "unit": 0, "price": 1.91, "won": null, "canceled": null,
+            "bet_type": "SPR", "points": -3.5, "team": "KC",
+            "home": "KC", "away": "DEN",
+            "game_ts": "2026-06-10T23:30:00+00:00", "game_dt": "2026-06-10",
+            "game_id": 102, "bookmaker": "DraftKings", "bet_concat": "KC_SPR",
+            "parlay_price_mult": 4.0311
+          }
+        ]
+        """
+        return try! JSONDecoder().decode([Txn].self, from: Data(json.utf8))
+    }
+
     // MARK: Schedule
 
     static var schedItems: [Sched] {

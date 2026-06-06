@@ -43,7 +43,7 @@ struct CardPlacedBet: View {
             Button {
                 if onCancel != nil { showCancelConfirm = true }
             } label: {
-                BetGameBanner(bet: selectedBet(from: txn))
+                CardBet(bet: selectedBet(from: txn))
             }
             .buttonStyle(.plain)
             .confirmationDialog("Cancel this bet?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
@@ -51,4 +51,15 @@ struct CardPlacedBet: View {
             }
         }
     }
+}
+
+#Preview("CardPlacedBet") {
+    VStack(spacing: 12) {
+        CardPlacedBet(txn: Mock.txnML)
+        CardPlacedBet(txn: Mock.txnSPR)
+        CardPlacedBet(txn: Mock.txnWon)
+        CardPlacedBet(txn: Mock.txnLost)
+    }
+    .padding()
+    .environmentObject(AppTheme())
 }
