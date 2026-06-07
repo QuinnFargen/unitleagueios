@@ -170,7 +170,7 @@ struct TabToolbar: ViewModifier {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(theme.cardBackground(colorScheme))
+//            .background(theme.cardBackground(colorScheme))
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -193,7 +193,7 @@ struct TabToolbar: ViewModifier {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(theme.cardBackground(colorScheme))
+//            .background(theme.cardBackground(colorScheme))
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
