@@ -13,7 +13,9 @@ extension Syndicate {
         createdByBettorId: Int = 1,
         code: String? = nil,
         symbol: String? = nil,
-        color: String? = nil
+        color: String? = nil,
+        startUnits: Int? = nil,
+        isStarted: Bool = false
     ) {
         self.syndicateId = syndicateId
         self.name = name
@@ -24,6 +26,8 @@ extension Syndicate {
         self.code = code
         self.symbol = symbol
         self.color = color
+        self.startUnits = startUnits
+        self.isStarted = isStarted
     }
 }
 
