@@ -14,6 +14,9 @@ struct ViewSyndicate: View {
     @State private var isLoading = false
     @State private var fetchError: String?
     @State private var showingEdit = false
+    @State private var showingStartConfirm = false
+    @State private var isStarting = false
+    @State private var startError: String?
 
     private var currentRunner: Runner? { runners.first(where: { $0.bettorId == bettorId }) }
     private var isAdmin: Bool { currentRunner?.role == "admin" }
@@ -98,42 +101,103 @@ struct ViewSyndicate: View {
         .sheet(isPresented: $showingEdit) {
             SheetSyndicateEdit(syndicate: $syndicate)
         }
+        .confirmationDialog(
+            "Start the league?",
+            isPresented: $showingStartConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Start League", role: .destructive) {
+                Task { await startLeague() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            let units = syndicate.startUnits ?? 0
+            Text("This will lock in all \(runners.count) members and deduct \(units) units each.")
+        }
+    }
+
+    private func startLeague() async {
+        isStarting = true
+        startError = nil
+        do {
+            syndicate = try await SyndicateService().startSyndicate(syndicateId: syndicate.syndicateId, bettorId: bettorId)
+        } catch {
+            startError = error.localizedDescription
+        }
+        isStarting = false
     }
 
     private var syndicateBanner: some View {
         let bannerColor = ProfileOption.color(for: syndicate.color ?? "")
         let iconName = syndicate.symbol ?? (syndicate.isPublic ? "sparkles" : "person.3.fill")
 
-        return HStack(alignment: .center, spacing: 14) {
-            Image(systemName: iconName)
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(bannerColor)
-                .frame(width: 48, height: 48)
-                .background(theme.cardBackgroundProminent(colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: iconName)
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(bannerColor)
+                    .frame(width: 48, height: 48)
+                    .background(theme.cardBackgroundProminent(colorScheme))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(syndicate.name)
-                    .font(.title2).bold()
-                    .foregroundStyle(theme.primaryText(colorScheme))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(syndicate.name)
+                        .font(.title2).bold()
+                        .foregroundStyle(theme.primaryText(colorScheme))
 
-                if syndicate.isPublic {
-                    Text("Public")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.accent)
+                    HStack(spacing: 8) {
+                        if syndicate.isPublic {
+                            Text("Public")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(theme.accent)
+                        }
+                        Text("\(runners.count) members")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        if let su = syndicate.startUnits, su > 0 {
+                            Text("\(su) units")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                if isAdmin {
+                    Button {
+                        showingEdit = true
+                    } label: {
+                        Image(systemName: "pencil.circle")
+                            .font(.title3)
+                            .foregroundStyle(theme.accent)
+                    }
                 }
             }
 
-            Spacer()
-
-            if isAdmin {
-                Button {
-                    showingEdit = true
-                } label: {
-                    Image(systemName: "pencil.circle")
-                        .font(.title3)
-                        .foregroundStyle(theme.accent)
+            if isAdmin && !syndicate.isStarted {
+                if let err = startError {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(.red)
                 }
+                Button {
+                    showingStartConfirm = true
+                } label: {
+                    HStack(spacing: 6) {
+                        if isStarting {
+                            ProgressView().scaleEffect(0.7)
+                        }
+                        Text("Start League")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(theme.accent)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(theme.accent.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+                .disabled(isStarting)
             }
         }
         .padding()

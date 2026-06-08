@@ -11,6 +11,8 @@ struct Syndicate: Codable, Identifiable {
     let code: String?
     let symbol: String?
     let color: String?
+    let startUnits: Int?
+    let isStarted: Bool
 
     enum CodingKeys: String, CodingKey {
         case syndicateId = "syndicate_id"
@@ -23,6 +25,8 @@ struct Syndicate: Codable, Identifiable {
         case code
         case symbol
         case color
+        case startUnits = "start_units"
+        case isStarted = "is_started"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -33,6 +37,8 @@ struct Syndicate: Codable, Identifiable {
         try c.encode(isPublic, forKey: .isPublic)
         try c.encodeIfPresent(maxRunner, forKey: .maxRunner)
         try c.encode(createdByBettorId, forKey: .createdByBettorId)
+        try c.encodeIfPresent(startUnits, forKey: .startUnits)
+        try c.encode(isStarted, forKey: .isStarted)
     }
 
     init(from decoder: Decoder) throws {
@@ -51,5 +57,7 @@ struct Syndicate: Codable, Identifiable {
         code = try c.decodeIfPresent(String.self, forKey: .code)
         symbol = try c.decodeIfPresent(String.self, forKey: .symbol)
         color = try c.decodeIfPresent(String.self, forKey: .color)
+        startUnits = try c.decodeIfPresent(Int.self, forKey: .startUnits)
+        isStarted = try c.decodeIfPresent(Bool.self, forKey: .isStarted) ?? false
     }
 }
