@@ -12,7 +12,7 @@ class SyndicateService {
         return try JSONDecoder().decode([Syndicate].self, from: data)
     }
 
-    func createSyndicate(bettorId: Int, name: String, description: String? = nil, isPublic: Bool = false, password: String? = nil, maxRunner: Int? = nil, symbol: String? = nil, color: String? = nil) async throws -> Syndicate {
+    func createSyndicate(bettorId: Int, name: String, description: String? = nil, isPublic: Bool = false, password: String? = nil, maxRunner: Int? = nil, startUnits: Int? = nil, symbol: String? = nil, color: String? = nil) async throws -> Syndicate {
         guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate") else {
             throw URLError(.badURL)
         }
@@ -24,6 +24,7 @@ class SyndicateService {
         if let desc = description { body["description"] = desc }
         if let pw = password { body["password"] = pw }
         if let max = maxRunner { body["max_runner"] = max }
+        if let su = startUnits { body["start_units"] = su }
         if let sym = symbol { body["symbol"] = sym }
         if let col = color { body["color"] = col }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -35,6 +36,23 @@ class SyndicateService {
             let runner: Runner
         }
         return try JSONDecoder().decode(CreateSyndicateResponse.self, from: data).syndicate
+    }
+
+    func startSyndicate(syndicateId: Int, bettorId: Int) async throws -> Syndicate {
+        guard let url = URL(string: "\(APIClient.baseURL)/odd/syndicate/\(syndicateId)/start") else {
+            throw URLError(.badURL)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["bettor_id": bettorId])
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+
+        struct StartResponse: Codable {
+            let syndicate: Syndicate
+        }
+        return try JSONDecoder().decode(StartResponse.self, from: data).syndicate
     }
 
     func updateSyndicate(syndicateId: Int, name: String, symbol: String? = nil, color: String? = nil) async throws -> Syndicate {
